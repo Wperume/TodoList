@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"todolist-api/internal/database"
 	"todolist-api/internal/handlers"
 	"todolist-api/internal/storage"
 
@@ -17,12 +18,35 @@ func main() {
 		port = "8080"
 	}
 
-	// Initialize storage
-	store := storage.NewStorage()
+	// Check if we should use in-memory storage (for development)
+	useInMemory := os.Getenv("USE_MEMORY_STORAGE") == "true"
 
-	// Initialize handlers
-	listHandler := handlers.NewListHandler(store)
-	todoHandler := handlers.NewTodoHandler(store)
+	var listHandler *handlers.ListHandler
+	var todoHandler *handlers.TodoHandler
+
+	if useInMemory {
+		log.Println("Using in-memory storage")
+		store := storage.NewStorage()
+		listHandler = handlers.NewListHandler(store)
+		todoHandler = handlers.NewTodoHandler(store)
+	} else {
+		// Initialize PostgreSQL connection
+		dbConfig := database.NewConfigFromEnv()
+		db, err := database.Connect(dbConfig)
+		if err != nil {
+			log.Fatalf("Failed to connect to database: %v", err)
+		}
+
+		// Run migrations
+		if err := database.AutoMigrate(db); err != nil {
+			log.Fatalf("Failed to run migrations: %v", err)
+		}
+
+		// Initialize PostgreSQL storage
+		store := storage.NewPostgresStorage(db)
+		listHandler = handlers.NewListHandler(store)
+		todoHandler = handlers.NewTodoHandler(store)
+	}
 
 	// Set up Gin router
 	router := gin.Default()

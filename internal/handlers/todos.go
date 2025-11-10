@@ -12,12 +12,12 @@ import (
 
 // TodoHandler handles todo operations
 type TodoHandler struct {
-	storage *storage.Storage
+	storage storage.Store
 }
 
 // NewTodoHandler creates a new todo handler
-func NewTodoHandler(storage *storage.Storage) *TodoHandler {
-	return &TodoHandler{storage: storage}
+func NewTodoHandler(store storage.Store) *TodoHandler {
+	return &TodoHandler{storage: store}
 }
 
 // GetTodosByList handles GET /lists/:listId/todos

@@ -13,12 +13,12 @@ import (
 
 // ListHandler handles todo list operations
 type ListHandler struct {
-	storage *storage.Storage
+	storage storage.Store
 }
 
 // NewListHandler creates a new list handler
-func NewListHandler(storage *storage.Storage) *ListHandler {
-	return &ListHandler{storage: storage}
+func NewListHandler(store storage.Store) *ListHandler {
+	return &ListHandler{storage: store}
 }
 
 // GetAllLists handles GET /lists

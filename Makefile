@@ -1,14 +1,20 @@
-.PHONY: build run docker-build docker-run docker-up docker-down test clean help
+.PHONY: build run run-memory docker-build docker-run docker-up docker-down docker-logs db-shell test clean help
 
 # Build the application
 build:
 	@echo "Building application..."
 	go build -o todolist-api ./cmd/server
 
-# Run the application locally
+# Run the application locally with PostgreSQL
 run: build
-	@echo "Starting server..."
+	@echo "Starting server with PostgreSQL..."
+	@echo "Make sure PostgreSQL is running and configured in .env"
 	./todolist-api
+
+# Run the application with in-memory storage (no database required)
+run-memory: build
+	@echo "Starting server with in-memory storage..."
+	USE_MEMORY_STORAGE=true ./todolist-api
 
 # Build Docker image
 docker-build:
@@ -29,6 +35,16 @@ docker-up:
 docker-down:
 	@echo "Stopping Docker Compose..."
 	docker-compose down
+
+# View Docker Compose logs
+docker-logs:
+	@echo "Viewing logs..."
+	docker-compose logs -f
+
+# Connect to PostgreSQL database shell
+db-shell:
+	@echo "Connecting to PostgreSQL..."
+	docker-compose exec postgres psql -U todouser -d todolist
 
 # Run API tests (requires server to be running)
 test:
@@ -60,11 +76,14 @@ lint:
 help:
 	@echo "Available targets:"
 	@echo "  build        - Build the application"
-	@echo "  run          - Build and run the application locally"
+	@echo "  run          - Build and run with PostgreSQL (requires local PostgreSQL)"
+	@echo "  run-memory   - Build and run with in-memory storage (no database)"
 	@echo "  docker-build - Build Docker image"
 	@echo "  docker-run   - Build and run Docker container"
-	@echo "  docker-up    - Start with Docker Compose"
+	@echo "  docker-up    - Start with Docker Compose (PostgreSQL + API)"
 	@echo "  docker-down  - Stop Docker Compose"
+	@echo "  docker-logs  - View Docker Compose logs"
+	@echo "  db-shell     - Connect to PostgreSQL database shell"
 	@echo "  test         - Run API tests (server must be running)"
 	@echo "  clean        - Clean build artifacts"
 	@echo "  deps         - Download dependencies"
