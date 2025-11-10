@@ -12,6 +12,7 @@ A REST API service for managing multiple named todo lists with full CRUD operati
 - **PostgreSQL Database**: Persistent storage with GORM ORM
 - **Containerized**: Docker and Docker Compose support for easy deployment
 - **Flexible Storage**: Can use in-memory storage for development/testing
+- **Rate Limiting**: Configurable rate limiting to protect against abuse
 
 ## API Specification
 
@@ -276,6 +277,12 @@ The service can be configured using environment variables:
 ### Storage Configuration
 - `USE_MEMORY_STORAGE`: Set to "true" to use in-memory storage instead of PostgreSQL
 
+### Rate Limiting Configuration
+- `RATE_LIMIT_ENABLED`: Enable/disable rate limiting (default: true)
+- `RATE_LIMIT_REQUESTS_PER_MIN`: Maximum requests per minute per IP (default: 60)
+- `RATE_LIMIT_REQUESTS_PER_HOUR`: Maximum requests per hour per IP (default: 1000, reserved for future use)
+- `RATE_LIMIT_BURST`: Burst size for rate limiting (default: 10, reserved for future use)
+
 ## Development
 
 ### Building
@@ -286,18 +293,83 @@ go build -o todolist-api ./cmd/server
 
 ### Running Tests
 
+The project includes comprehensive unit tests with high coverage:
+
 ```bash
-go test ./...
+# Run all unit tests
+make test-unit
+
+# Run tests with coverage report
+make test-coverage
+
+# Run tests in verbose mode
+make test-verbose
+
+# Or use go test directly
+go test ./... -v
 ```
+
+**Test Coverage:**
+- Models: 100%
+- Middleware: 90.0%
+- Storage Layer: 80.2%
+
+See [TESTING.md](TESTING.md) for detailed testing documentation.
+
+## Rate Limiting
+
+The API includes configurable rate limiting to protect against abuse and ensure fair usage.
+
+### Configuration
+
+Rate limiting is controlled via environment variables (see [.env.example](.env.example)):
+
+```bash
+RATE_LIMIT_ENABLED=true                # Enable/disable rate limiting
+RATE_LIMIT_REQUESTS_PER_MIN=60         # Maximum requests per minute per IP
+RATE_LIMIT_REQUESTS_PER_HOUR=1000      # Reserved for future use
+RATE_LIMIT_BURST=10                    # Reserved for future use
+```
+
+### Behavior
+
+- **Global limit**: Applied to all endpoints by default (60 requests/minute per IP)
+- **Per-IP tracking**: Rate limits are tracked separately for each IP address
+- **Response on limit exceeded**: Returns HTTP 429 (Too Many Requests) with retry information:
+
+```json
+{
+  "code": "RATE_LIMIT_EXCEEDED",
+  "message": "Too many requests. Please try again later.",
+  "retryAfter": 60
+}
+```
+
+### Disabling Rate Limiting
+
+For development or testing, you can disable rate limiting:
+
+```bash
+RATE_LIMIT_ENABLED=false go run cmd/server/main.go
+```
+
+### Custom Rate Limits
+
+The middleware also provides separate rate limiters for read and write operations (currently not applied but available):
+
+- **ReadRateLimiter**: Double the global limit (120 req/min) for GET requests
+- **WriteRateLimiter**: Half the global limit (30 req/min) for POST/PUT/DELETE requests
+
+These can be applied to specific route groups in [cmd/server/main.go](cmd/server/main.go:57).
 
 ## Next Steps
 
 - ✅ ~~Add database persistence (PostgreSQL/MongoDB)~~ - **COMPLETED**
+- ✅ ~~Add unit and integration tests~~ - **COMPLETED**
+- ✅ ~~Add rate limiting~~ - **COMPLETED**
 - Add JWT authentication and authorization
-- Add unit and integration tests
 - Add request logging and metrics
 - Add CORS middleware
-- Add rate limiting
 - Add API documentation UI (Swagger/ReDoc)
 - Add database connection pooling tuning
 - Add health check with database connectivity status

@@ -6,6 +6,7 @@ import (
 
 	"todolist-api/internal/database"
 	"todolist-api/internal/handlers"
+	"todolist-api/internal/middleware"
 	"todolist-api/internal/storage"
 
 	"github.com/gin-gonic/gin"
@@ -50,6 +51,10 @@ func main() {
 
 	// Set up Gin router
 	router := gin.Default()
+
+	// Initialize rate limiting
+	rateLimitConfig := middleware.NewRateLimitConfigFromEnv()
+	router.Use(middleware.GlobalRateLimiter(rateLimitConfig))
 
 	// API version 1 routes
 	v1 := router.Group("/api/v1")
