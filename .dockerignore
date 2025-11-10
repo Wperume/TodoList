@@ -1,0 +1,29 @@
+# Ignore git files
+.git
+.gitignore
+
+# Ignore IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Ignore build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Ignore test cache
+*.test
+*.out
+
+# Ignore documentation
+*.md
+!README.md
+
+# Ignore docker files
+Dockerfile
+docker-compose.yml
+.dockerignore

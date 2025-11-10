@@ -1,0 +1,682 @@
+openapi: 3.0.3
+info:
+  title: Todo List API
+  description: A REST API for managing multiple named todo lists with CRUD operations
+  version: 1.0.0
+  contact:
+    name: API Support
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+  - url: https://api.example.com/v1
+    description: Production server
+
+tags:
+  - name: lists
+    description: Operations on todo lists
+  - name: todos
+    description: Operations on todos within lists
+
+paths:
+  /lists:
+    get:
+      tags:
+        - lists
+      summary: Get all todo lists
+      description: Retrieve all todo lists
+      operationId: getAllLists
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of items per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TodoList'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - lists
+      summary: Create a new todo list
+      description: Create a new named todo list
+      operationId: createList
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoListRequest'
+      responses:
+        '201':
+          description: Todo list created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoList'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: List with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /lists/{listId}:
+    get:
+      tags:
+        - lists
+      summary: Get a todo list by ID
+      description: Retrieve a specific todo list by its ID
+      operationId: getListById
+      parameters:
+        - name: listId
+          in: path
+          description: ID of the todo list
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoList'
+        '404':
+          description: Todo list not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - lists
+      summary: Update a todo list
+      description: Update an existing todo list's properties
+      operationId: updateList
+      parameters:
+        - name: listId
+          in: path
+          description: ID of the todo list
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTodoListRequest'
+      responses:
+        '200':
+          description: Todo list updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoList'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Todo list not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: List with this name already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - lists
+      summary: Delete a todo list
+      description: Delete a todo list and all its todos
+      operationId: deleteList
+      parameters:
+        - name: listId
+          in: path
+          description: ID of the todo list
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Todo list deleted successfully
+        '404':
+          description: Todo list not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /lists/{listId}/todos:
+    get:
+      tags:
+        - todos
+      summary: Get all todos in a list
+      description: Retrieve all todos from a specific list
+      operationId: getTodosByList
+      parameters:
+        - name: listId
+          in: path
+          description: ID of the todo list
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: priority
+          in: query
+          description: Filter by priority
+          required: false
+          schema:
+            type: string
+            enum: [low, medium, high]
+        - name: completed
+          in: query
+          description: Filter by completion status
+          required: false
+          schema:
+            type: boolean
+        - name: sortBy
+          in: query
+          description: Sort field
+          required: false
+          schema:
+            type: string
+            enum: [dueDate, priority, createdAt]
+            default: createdAt
+        - name: sortOrder
+          in: query
+          description: Sort order
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Todo'
+        '404':
+          description: Todo list not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - todos
+      summary: Create a new todo
+      description: Add a new todo to a specific list
+      operationId: createTodo
+      parameters:
+        - name: listId
+          in: path
+          description: ID of the todo list
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTodoRequest'
+      responses:
+        '201':
+          description: Todo created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Todo list not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /lists/{listId}/todos/{todoId}:
+    get:
+      tags:
+        - todos
+      summary: Get a specific todo
+      description: Retrieve a specific todo by its ID
+      operationId: getTodoById
+      parameters:
+        - name: listId
+          in: path
+          description: ID of the todo list
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: todoId
+          in: path
+          description: ID of the todo
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '404':
+          description: Todo list or todo not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - todos
+      summary: Update a todo
+      description: Update an existing todo's properties
+      operationId: updateTodo
+      parameters:
+        - name: listId
+          in: path
+          description: ID of the todo list
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: todoId
+          in: path
+          description: ID of the todo
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTodoRequest'
+      responses:
+        '200':
+          description: Todo updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Todo'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Todo list or todo not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - todos
+      summary: Delete a todo
+      description: Delete a specific todo from a list
+      operationId: deleteTodo
+      parameters:
+        - name: listId
+          in: path
+          description: ID of the todo list
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: todoId
+          in: path
+          description: ID of the todo
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Todo deleted successfully
+        '404':
+          description: Todo list or todo not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    TodoList:
+      type: object
+      required:
+        - id
+        - name
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the todo list
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          description: Name of the todo list
+          minLength: 1
+          maxLength: 100
+          example: "Work Tasks"
+        description:
+          type: string
+          description: Optional description of the todo list
+          maxLength: 500
+          example: "Tasks related to work projects"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the list was created
+          example: "2025-11-09T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the list was last updated
+          example: "2025-11-09T15:30:00Z"
+        todoCount:
+          type: integer
+          description: Number of todos in the list
+          example: 5
+
+    CreateTodoListRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Name of the todo list
+          minLength: 1
+          maxLength: 100
+          example: "Work Tasks"
+        description:
+          type: string
+          description: Optional description of the todo list
+          maxLength: 500
+          example: "Tasks related to work projects"
+
+    UpdateTodoListRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the todo list
+          minLength: 1
+          maxLength: 100
+          example: "Updated Work Tasks"
+        description:
+          type: string
+          description: Optional description of the todo list
+          maxLength: 500
+          example: "Updated description"
+
+    Todo:
+      type: object
+      required:
+        - id
+        - listId
+        - description
+        - priority
+        - completed
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the todo
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        listId:
+          type: string
+          format: uuid
+          description: ID of the parent todo list
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        description:
+          type: string
+          description: Description of the todo item
+          minLength: 1
+          maxLength: 500
+          example: "Complete project documentation"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          description: Priority level of the todo
+          example: "high"
+        dueDate:
+          type: string
+          format: date-time
+          description: Due date for the todo
+          example: "2025-11-15T23:59:59Z"
+        completed:
+          type: boolean
+          description: Whether the todo is completed
+          default: false
+          example: false
+        completedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the todo was completed
+          nullable: true
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the todo was created
+          example: "2025-11-09T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the todo was last updated
+          example: "2025-11-09T10:00:00Z"
+
+    CreateTodoRequest:
+      type: object
+      required:
+        - description
+        - priority
+      properties:
+        description:
+          type: string
+          description: Description of the todo item
+          minLength: 1
+          maxLength: 500
+          example: "Complete project documentation"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          description: Priority level of the todo
+          example: "high"
+        dueDate:
+          type: string
+          format: date-time
+          description: Due date for the todo
+          example: "2025-11-15T23:59:59Z"
+
+    UpdateTodoRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          description: Description of the todo item
+          minLength: 1
+          maxLength: 500
+          example: "Updated task description"
+        priority:
+          type: string
+          enum: [low, medium, high]
+          description: Priority level of the todo
+          example: "medium"
+        dueDate:
+          type: string
+          format: date-time
+          description: Due date for the todo
+          example: "2025-11-20T23:59:59Z"
+        completed:
+          type: boolean
+          description: Whether the todo is completed
+          example: true
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          description: Current page number
+          example: 1
+        limit:
+          type: integer
+          description: Number of items per page
+          example: 20
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 5
+        totalItems:
+          type: integer
+          description: Total number of items
+          example: 95
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "RESOURCE_NOT_FOUND"
+        message:
+          type: string
+          description: Error message
+          example: "The requested todo list was not found"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
