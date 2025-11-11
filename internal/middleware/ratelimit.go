@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 	"github.com/ulule/limiter/v3"
 	mgin "github.com/ulule/limiter/v3/drivers/middleware/gin"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
+	"todolist-api/internal/logging"
 )
 
 // RateLimitConfig holds rate limiting configuration
@@ -41,7 +41,7 @@ func NewRateLimitConfigFromEnv() *RateLimitConfig {
 func GlobalRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 	// If rate limiting is disabled, return a no-op middleware
 	if !config.Enabled {
-		log.Println("Rate limiting is disabled")
+		logging.Logger.Info("Rate limiting is disabled")
 		return func(c *gin.Context) {
 			c.Next()
 		}
@@ -61,6 +61,15 @@ func GlobalRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 
 	// Create middleware with custom error handler
 	middleware := mgin.NewMiddleware(instance, mgin.WithLimitReachedHandler(func(c *gin.Context) {
+		// Log rate limit violation with client details
+		logging.Logger.WithFields(map[string]interface{}{
+			"client_ip":       c.ClientIP(),
+			"path":            c.Request.URL.Path,
+			"method":          c.Request.Method,
+			"rate_limited":    true,
+			"limit_per_min":   config.RequestsPerMin,
+		}).Warn("Rate limit exceeded")
+
 		c.JSON(http.StatusTooManyRequests, gin.H{
 			"code":    "RATE_LIMIT_EXCEEDED",
 			"message": "Too many requests. Please try again later.",
@@ -69,7 +78,7 @@ func GlobalRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 		c.Abort()
 	}))
 
-	log.Printf("Rate limiting enabled: %d requests per minute", config.RequestsPerMin)
+	logging.Logger.Infof("Rate limiting enabled: %d requests per minute", config.RequestsPerMin)
 	return middleware
 }
 
@@ -91,6 +100,15 @@ func ReadRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 	instance := limiter.New(store, rate)
 
 	middleware := mgin.NewMiddleware(instance, mgin.WithLimitReachedHandler(func(c *gin.Context) {
+		logging.Logger.WithFields(map[string]interface{}{
+			"client_ip":       c.ClientIP(),
+			"path":            c.Request.URL.Path,
+			"method":          c.Request.Method,
+			"rate_limited":    true,
+			"limit_type":      "read",
+			"limit_per_min":   rate.Limit,
+		}).Warn("Read rate limit exceeded")
+
 		c.JSON(http.StatusTooManyRequests, gin.H{
 			"code":       "RATE_LIMIT_EXCEEDED",
 			"message":    "Too many read requests. Please try again later.",
@@ -121,6 +139,15 @@ func WriteRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 	instance := limiter.New(store, rate)
 
 	middleware := mgin.NewMiddleware(instance, mgin.WithLimitReachedHandler(func(c *gin.Context) {
+		logging.Logger.WithFields(map[string]interface{}{
+			"client_ip":       c.ClientIP(),
+			"path":            c.Request.URL.Path,
+			"method":          c.Request.Method,
+			"rate_limited":    true,
+			"limit_type":      "write",
+			"limit_per_min":   rate.Limit,
+		}).Warn("Write rate limit exceeded")
+
 		c.JSON(http.StatusTooManyRequests, gin.H{
 			"code":       "RATE_LIMIT_EXCEEDED",
 			"message":    "Too many write requests. Please try again later.",

@@ -13,6 +13,7 @@ A REST API service for managing multiple named todo lists with full CRUD operati
 - **Containerized**: Docker and Docker Compose support for easy deployment
 - **Flexible Storage**: Can use in-memory storage for development/testing
 - **Rate Limiting**: Configurable rate limiting to protect against abuse
+- **Comprehensive Logging**: Structured logging with automatic log rotation and configurable retention
 
 ## API Specification
 
@@ -283,6 +284,16 @@ The service can be configured using environment variables:
 - `RATE_LIMIT_REQUESTS_PER_HOUR`: Maximum requests per hour per IP (default: 1000, reserved for future use)
 - `RATE_LIMIT_BURST`: Burst size for rate limiting (default: 10, reserved for future use)
 
+### Logging Configuration
+- `LOG_FILE_ENABLED`: Enable/disable file logging (default: true)
+- `LOG_FILE_PATH`: Path to log file (default: ./logs/todolist-api.log)
+- `LOG_MAX_SIZE_MB`: Maximum log file size in MB before rotation (default: 100)
+- `LOG_MAX_BACKUPS`: Number of old log files to retain (default: 3)
+- `LOG_MAX_AGE_DAYS`: Maximum days to retain old log files (default: 28)
+- `LOG_COMPRESS`: Compress rotated log files (default: true)
+- `LOG_LEVEL`: Log level - trace, debug, info, warn, error, fatal, panic (default: info)
+- `LOG_JSON_FORMAT`: Use JSON format instead of text (default: false)
+
 ## Development
 
 ### Building
@@ -311,7 +322,8 @@ go test ./... -v
 
 **Test Coverage:**
 - Models: 100%
-- Middleware: 90.0%
+- Logging: 86.2%
+- Middleware: 85.1%
 - Storage Layer: 80.2%
 
 See [TESTING.md](TESTING.md) for detailed testing documentation.
@@ -362,13 +374,138 @@ The middleware also provides separate rate limiters for read and write operation
 
 These can be applied to specific route groups in [cmd/server/main.go](cmd/server/main.go:57).
 
+## Logging
+
+The API includes comprehensive request logging with automatic log rotation and configurable retention policies.
+
+### Features
+
+- **Request Logging**: Every HTTP request is logged with detailed information
+- **Automatic Log Rotation**: Log files are automatically rotated when they reach the size limit
+- **Configurable Retention**: Control how many old logs to keep and for how long
+- **Compression**: Old log files are automatically compressed to save disk space
+- **Multiple Formats**: Support for both human-readable text and machine-parseable JSON
+- **Structured Logging**: Uses logrus for structured, leveled logging
+- **Rate Limit Tracking**: Automatically logs when rate limits are exceeded
+
+### Logged Information
+
+Each request log entry includes:
+
+- **Timestamp**: ISO 8601 formatted timestamp
+- **Client IP**: IP address of the requesting client
+- **Method & Path**: HTTP method and request path
+- **Query Parameters**: URL query string
+- **Status Code**: HTTP response status
+- **Latency**: Request processing time in milliseconds
+- **Response Size**: Size of the response body
+- **User Agent**: Client user agent string
+- **API Key Prefix**: First 8 characters of API key (when authentication is added)
+- **Rate Limited**: Flag indicating if the request was rate limited
+- **Errors**: Any errors that occurred during request processing
+
+### Log Format Examples
+
+**Text Format (default):**
+```
+time="2025-11-10 15:04:05" level=info msg="Request completed" client_ip=192.168.1.1 method=GET path=/api/v1/lists status=200 latency_ms=25 response_size=1024
+```
+
+**JSON Format:**
+```json
+{
+  "time": "2025-11-10T15:04:05-05:00",
+  "level": "info",
+  "msg": "Request completed",
+  "client_ip": "192.168.1.1",
+  "method": "GET",
+  "path": "/api/v1/lists",
+  "query": "",
+  "status": 200,
+  "latency_ms": 25,
+  "response_size": 1024,
+  "user_agent": "Mozilla/5.0..."
+}
+```
+
+### Log Rotation
+
+Logs are automatically rotated using lumberjack:
+
+- **Size-based**: When a log file reaches `LOG_MAX_SIZE_MB` (default: 100MB)
+- **Retention by count**: Keep `LOG_MAX_BACKUPS` old files (default: 3)
+- **Retention by age**: Delete files older than `LOG_MAX_AGE_DAYS` (default: 28 days)
+- **Compression**: Old logs are gzipped to save disk space
+
+Example log file structure:
+```
+logs/
+├── todolist-api.log           # Current log file
+├── todolist-api-2025-11-09.log.gz
+├── todolist-api-2025-11-08.log.gz
+└── todolist-api-2025-11-07.log.gz
+```
+
+### Log Levels
+
+Configure logging verbosity with `LOG_LEVEL`:
+
+- **trace**: Very detailed debugging information
+- **debug**: Detailed debugging information
+- **info** (default): General operational information
+- **warn**: Warning messages (4xx errors, rate limits)
+- **error**: Error messages (5xx errors)
+- **fatal**: Fatal errors that cause the application to exit
+- **panic**: Panic-level errors
+
+### Rate Limit Logging
+
+When a client exceeds the rate limit, a warning is logged:
+
+```
+time="2025-11-10 15:04:05" level=warning msg="Rate limit exceeded" client_ip=192.168.1.100 path=/api/v1/lists method=POST rate_limited=true limit_per_min=60
+```
+
+### Configuration Examples
+
+**Production (JSON format, info level):**
+```bash
+LOG_FILE_ENABLED=true
+LOG_FILE_PATH=/var/log/todolist-api/app.log
+LOG_MAX_SIZE_MB=100
+LOG_MAX_BACKUPS=10
+LOG_MAX_AGE_DAYS=90
+LOG_COMPRESS=true
+LOG_LEVEL=info
+LOG_JSON_FORMAT=true
+```
+
+**Development (text format, debug level):**
+```bash
+LOG_FILE_ENABLED=true
+LOG_FILE_PATH=./logs/dev.log
+LOG_MAX_SIZE_MB=10
+LOG_MAX_BACKUPS=2
+LOG_MAX_AGE_DAYS=7
+LOG_COMPRESS=false
+LOG_LEVEL=debug
+LOG_JSON_FORMAT=false
+```
+
+**Testing (stdout only):**
+```bash
+LOG_FILE_ENABLED=false
+LOG_LEVEL=warn
+```
+
 ## Next Steps
 
 - ✅ ~~Add database persistence (PostgreSQL/MongoDB)~~ - **COMPLETED**
 - ✅ ~~Add unit and integration tests~~ - **COMPLETED**
 - ✅ ~~Add rate limiting~~ - **COMPLETED**
+- ✅ ~~Add request logging~~ - **COMPLETED**
 - Add JWT authentication and authorization
-- Add request logging and metrics
+- Add metrics and monitoring (Prometheus)
 - Add CORS middleware
 - Add API documentation UI (Swagger/ReDoc)
 - Add database connection pooling tuning
