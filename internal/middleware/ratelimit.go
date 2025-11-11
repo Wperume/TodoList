@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -158,12 +157,4 @@ func WriteRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 	}))
 
 	return middleware
-}
-
-// getEnv retrieves an environment variable or returns a default value
-func getEnv(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
 }

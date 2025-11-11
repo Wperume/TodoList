@@ -14,6 +14,7 @@ A REST API service for managing multiple named todo lists with full CRUD operati
 - **Flexible Storage**: Can use in-memory storage for development/testing
 - **Rate Limiting**: Configurable rate limiting to protect against abuse
 - **Comprehensive Logging**: Structured logging with automatic log rotation and configurable retention
+- **Security Hardened**: XSS protection, CORS, security headers, request size limits, UUID validation
 
 ## API Specification
 
@@ -294,6 +295,20 @@ The service can be configured using environment variables:
 - `LOG_LEVEL`: Log level - trace, debug, info, warn, error, fatal, panic (default: info)
 - `LOG_JSON_FORMAT`: Use JSON format instead of text (default: false)
 
+### Security Configuration
+- `MAX_REQUEST_BODY_SIZE`: Maximum request body size in bytes (default: 1048576 = 1MB)
+- `ENABLE_XSS_PROTECTION`: Enable XSS input sanitization (default: true)
+- `TRUSTED_PROXIES`: Comma-separated list of trusted proxy IPs (optional)
+
+### CORS Configuration
+- `CORS_ENABLED`: Enable/disable CORS (default: true)
+- `CORS_ALLOWED_ORIGINS`: Allowed origins, `*` for all or comma-separated list (default: *)
+- `CORS_ALLOWED_METHODS`: Allowed HTTP methods (default: GET,POST,PUT,DELETE,OPTIONS,PATCH)
+- `CORS_ALLOWED_HEADERS`: Allowed request headers
+- `CORS_EXPOSE_HEADERS`: Headers exposed to client
+- `CORS_ALLOW_CREDENTIALS`: Allow credentials like cookies (default: false)
+- `CORS_MAX_AGE`: Preflight cache duration in seconds (default: 3600)
+
 ## Development
 
 ### Building
@@ -323,7 +338,7 @@ go test ./... -v
 **Test Coverage:**
 - Models: 100%
 - Logging: 86.2%
-- Middleware: 85.1%
+- Middleware: 82.1% (includes security, CORS, rate limiting, logging)
 - Storage Layer: 80.2%
 
 See [TESTING.md](TESTING.md) for detailed testing documentation.
@@ -498,18 +513,75 @@ LOG_FILE_ENABLED=false
 LOG_LEVEL=warn
 ```
 
+## Security
+
+The API implements multiple layers of security protection. See [SECURITY.md](SECURITY.md) for complete security documentation.
+
+### Implemented Security Features
+
+✅ **SQL Injection Protection** - GORM parameterized queries
+✅ **XSS Prevention** - HTML escaping of all user input
+✅ **DoS Protection** - Rate limiting (60 req/min per IP)
+✅ **Request Size Limits** - Maximum 1MB request body
+✅ **Security Headers** - X-Frame-Options, CSP, X-XSS-Protection, etc.
+✅ **CORS Protection** - Configurable origin whitelist
+✅ **UUID Validation** - Format validation before database queries
+✅ **Error Sanitization** - Generic errors to clients, detailed logs server-side
+✅ **Memory Safety** - Go's built-in bounds checking and GC
+
+### Security Configuration
+
+**Production Settings:**
+```bash
+# Strict CORS - DO NOT use wildcard!
+CORS_ALLOWED_ORIGINS=https://yourdomain.com
+
+# Reasonable rate limits
+RATE_LIMIT_REQUESTS_PER_MIN=30
+
+# XSS protection enabled
+ENABLE_XSS_PROTECTION=true
+
+# Request size limit
+MAX_REQUEST_BODY_SIZE=524288  # 512KB
+```
+
+**Development Settings:**
+```bash
+# Relaxed for development
+CORS_ALLOWED_ORIGINS=*
+RATE_LIMIT_ENABLED=false
+```
+
+### What's NOT Implemented (Yet)
+
+⚠️ **Authentication** - No JWT/API key authentication (planned)
+⚠️ **Authorization** - No user-level access control (planned)
+⚠️ **HTTPS Enforcement** - Should be deployed behind HTTPS proxy
+
+### Security Best Practices
+
+1. **Always use HTTPS in production** - Deploy behind nginx/load balancer with SSL
+2. **Configure CORS strictly** - Never use `*` wildcard in production
+3. **Monitor rate limit logs** - Track suspicious IPs hitting limits
+4. **Keep dependencies updated** - Regularly update Go modules
+5. **Use strong database passwords** - Never use default credentials
+
+See [SECURITY.md](SECURITY.md) for detailed security information, testing procedures, and deployment checklist.
+
 ## Next Steps
 
 - ✅ ~~Add database persistence (PostgreSQL/MongoDB)~~ - **COMPLETED**
 - ✅ ~~Add unit and integration tests~~ - **COMPLETED**
 - ✅ ~~Add rate limiting~~ - **COMPLETED**
 - ✅ ~~Add request logging~~ - **COMPLETED**
+- ✅ ~~Add security hardening (XSS, CORS, headers, size limits)~~ - **COMPLETED**
 - Add JWT authentication and authorization
 - Add metrics and monitoring (Prometheus)
-- Add CORS middleware
 - Add API documentation UI (Swagger/ReDoc)
 - Add database connection pooling tuning
 - Add health check with database connectivity status
+- Add HTTPS/TLS support
 
 ## License
 

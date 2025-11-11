@@ -58,8 +58,22 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Recovery()) // Add recovery middleware
 
+	// Add security headers (should be first)
+	router.Use(middleware.SecurityHeaders())
+
+	// Add CORS middleware
+	corsConfig := middleware.NewCORSConfigFromEnv()
+	router.Use(middleware.CORS(corsConfig))
+
+	// Add request size limit
+	securityConfig := middleware.NewSecurityConfigFromEnv()
+	router.Use(middleware.RequestSizeLimit(securityConfig.MaxRequestBodySize))
+
 	// Add request logging middleware
 	router.Use(middleware.RequestLogger())
+
+	// Add error sanitization (catches panics and sanitizes errors)
+	router.Use(middleware.ErrorSanitizer())
 
 	// Initialize rate limiting
 	rateLimitConfig := middleware.NewRateLimitConfigFromEnv()
@@ -73,16 +87,18 @@ func main() {
 		{
 			lists.GET("", listHandler.GetAllLists)
 			lists.POST("", listHandler.CreateList)
-			lists.GET("/:listId", listHandler.GetListByID)
-			lists.PUT("/:listId", listHandler.UpdateList)
-			lists.DELETE("/:listId", listHandler.DeleteList)
 
-			// Todo routes (nested under lists)
-			lists.GET("/:listId/todos", todoHandler.GetTodosByList)
-			lists.POST("/:listId/todos", todoHandler.CreateTodo)
-			lists.GET("/:listId/todos/:todoId", todoHandler.GetTodoByID)
-			lists.PUT("/:listId/todos/:todoId", todoHandler.UpdateTodo)
-			lists.DELETE("/:listId/todos/:todoId", todoHandler.DeleteTodo)
+			// Routes with listId parameter - validate UUID
+			lists.GET("/:listId", middleware.UUIDValidator("listId"), listHandler.GetListByID)
+			lists.PUT("/:listId", middleware.UUIDValidator("listId"), listHandler.UpdateList)
+			lists.DELETE("/:listId", middleware.UUIDValidator("listId"), listHandler.DeleteList)
+
+			// Todo routes (nested under lists) - validate both listId and todoId
+			lists.GET("/:listId/todos", middleware.UUIDValidator("listId"), todoHandler.GetTodosByList)
+			lists.POST("/:listId/todos", middleware.UUIDValidator("listId"), todoHandler.CreateTodo)
+			lists.GET("/:listId/todos/:todoId", middleware.UUIDValidator("listId", "todoId"), todoHandler.GetTodoByID)
+			lists.PUT("/:listId/todos/:todoId", middleware.UUIDValidator("listId", "todoId"), todoHandler.UpdateTodo)
+			lists.DELETE("/:listId/todos/:todoId", middleware.UUIDValidator("listId", "todoId"), todoHandler.DeleteTodo)
 		}
 	}
 
