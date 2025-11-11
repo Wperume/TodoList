@@ -22,8 +22,8 @@ var (
 // Storage provides in-memory storage for todo lists and todos
 type Storage struct {
 	mu    sync.RWMutex
-	lists map[uuid.UUID]*models.TodoList
-	todos map[uuid.UUID]*models.Todo
+	lists map[uuid.UUID]*models.TodoList // maps list ID to list
+	todos map[uuid.UUID]*models.Todo     // maps todo ID to todo
 }
 
 // NewStorage creates a new in-memory storage instance
@@ -34,14 +34,14 @@ func NewStorage() *Storage {
 	}
 }
 
-// CreateList creates a new todo list
-func (s *Storage) CreateList(req models.CreateTodoListRequest) (*models.TodoList, error) {
+// CreateList creates a new todo list for a specific user
+func (s *Storage) CreateList(userID uuid.UUID, req models.CreateTodoListRequest) (*models.TodoList, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	// Check if list with same name exists
+	// Check if list with same name exists for this user
 	for _, list := range s.lists {
-		if list.Name == req.Name {
+		if list.UserID == userID && list.Name == req.Name {
 			return nil, ErrListNameExists
 		}
 	}
@@ -49,6 +49,7 @@ func (s *Storage) CreateList(req models.CreateTodoListRequest) (*models.TodoList
 	now := time.Now()
 	list := &models.TodoList{
 		ID:          uuid.New(),
+		UserID:      userID,
 		Name:        req.Name,
 		Description: req.Description,
 		CreatedAt:   now,
@@ -60,17 +61,19 @@ func (s *Storage) CreateList(req models.CreateTodoListRequest) (*models.TodoList
 	return list, nil
 }
 
-// GetAllLists retrieves all todo lists with pagination
-func (s *Storage) GetAllLists(page, limit int) ([]models.TodoList, *models.Pagination, error) {
+// GetAllLists retrieves all todo lists for a specific user with pagination
+func (s *Storage) GetAllLists(userID uuid.UUID, page, limit int) ([]models.TodoList, *models.Pagination, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	// Convert map to slice
+	// Convert map to slice, filtering by user
 	allLists := make([]models.TodoList, 0, len(s.lists))
 	for _, list := range s.lists {
-		listCopy := *list
-		listCopy.TodoCount = s.countTodosInList(list.ID)
-		allLists = append(allLists, listCopy)
+		if list.UserID == userID {
+			listCopy := *list
+			listCopy.TodoCount = s.countTodosInList(list.ID)
+			allLists = append(allLists, listCopy)
+		}
 	}
 
 	// Sort by creation date (newest first)
@@ -106,35 +109,35 @@ func (s *Storage) GetAllLists(page, limit int) ([]models.TodoList, *models.Pagin
 	return paginatedLists, pagination, nil
 }
 
-// GetListByID retrieves a todo list by ID
-func (s *Storage) GetListByID(id uuid.UUID) (*models.TodoList, error) {
+// GetListByID retrieves a todo list by ID for a specific user
+func (s *Storage) GetListByID(userID, listID uuid.UUID) (*models.TodoList, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	list, exists := s.lists[id]
-	if !exists {
+	list, exists := s.lists[listID]
+	if !exists || list.UserID != userID {
 		return nil, ErrListNotFound
 	}
 
 	listCopy := *list
-	listCopy.TodoCount = s.countTodosInList(id)
+	listCopy.TodoCount = s.countTodosInList(listID)
 	return &listCopy, nil
 }
 
-// UpdateList updates an existing todo list
-func (s *Storage) UpdateList(id uuid.UUID, req models.UpdateTodoListRequest) (*models.TodoList, error) {
+// UpdateList updates an existing todo list for a specific user
+func (s *Storage) UpdateList(userID, listID uuid.UUID, req models.UpdateTodoListRequest) (*models.TodoList, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	list, exists := s.lists[id]
-	if !exists {
+	list, exists := s.lists[listID]
+	if !exists || list.UserID != userID {
 		return nil, ErrListNotFound
 	}
 
-	// Check if new name conflicts with existing list
+	// Check if new name conflicts with existing list for this user
 	if req.Name != nil && *req.Name != list.Name {
 		for _, l := range s.lists {
-			if l.ID != id && l.Name == *req.Name {
+			if l.UserID == userID && l.ID != listID && l.Name == *req.Name {
 				return nil, ErrListNameExists
 			}
 		}
@@ -148,36 +151,38 @@ func (s *Storage) UpdateList(id uuid.UUID, req models.UpdateTodoListRequest) (*m
 	list.UpdatedAt = time.Now()
 
 	listCopy := *list
-	listCopy.TodoCount = s.countTodosInList(id)
+	listCopy.TodoCount = s.countTodosInList(listID)
 	return &listCopy, nil
 }
 
-// DeleteList deletes a todo list and all its todos
-func (s *Storage) DeleteList(id uuid.UUID) error {
+// DeleteList deletes a todo list and all its todos for a specific user
+func (s *Storage) DeleteList(userID, listID uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.lists[id]; !exists {
+	list, exists := s.lists[listID]
+	if !exists || list.UserID != userID {
 		return ErrListNotFound
 	}
 
 	// Delete all todos in this list
 	for todoID, todo := range s.todos {
-		if todo.ListID == id {
+		if todo.ListID == listID {
 			delete(s.todos, todoID)
 		}
 	}
 
-	delete(s.lists, id)
+	delete(s.lists, listID)
 	return nil
 }
 
-// CreateTodo creates a new todo in a list
-func (s *Storage) CreateTodo(listID uuid.UUID, req models.CreateTodoRequest) (*models.Todo, error) {
+// CreateTodo creates a new todo in a list owned by a specific user
+func (s *Storage) CreateTodo(userID, listID uuid.UUID, req models.CreateTodoRequest) (*models.Todo, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.lists[listID]; !exists {
+	list, exists := s.lists[listID]
+	if !exists || list.UserID != userID {
 		return nil, ErrListNotFound
 	}
 
@@ -198,12 +203,13 @@ func (s *Storage) CreateTodo(listID uuid.UUID, req models.CreateTodoRequest) (*m
 	return todo, nil
 }
 
-// GetTodosByList retrieves all todos in a list with filtering and sorting
-func (s *Storage) GetTodosByList(listID uuid.UUID, priority *models.Priority, completed *bool, sortBy, sortOrder string) ([]models.Todo, error) {
+// GetTodosByList retrieves all todos in a list owned by a specific user with filtering and sorting
+func (s *Storage) GetTodosByList(userID, listID uuid.UUID, priority *models.Priority, completed *bool, sortBy, sortOrder string) ([]models.Todo, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if _, exists := s.lists[listID]; !exists {
+	list, exists := s.lists[listID]
+	if !exists || list.UserID != userID {
 		return nil, ErrListNotFound
 	}
 
@@ -233,12 +239,13 @@ func (s *Storage) GetTodosByList(listID uuid.UUID, priority *models.Priority, co
 	return result, nil
 }
 
-// GetTodoByID retrieves a specific todo
-func (s *Storage) GetTodoByID(listID, todoID uuid.UUID) (*models.Todo, error) {
+// GetTodoByID retrieves a specific todo from a list owned by a specific user
+func (s *Storage) GetTodoByID(userID, listID, todoID uuid.UUID) (*models.Todo, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	if _, exists := s.lists[listID]; !exists {
+	list, exists := s.lists[listID]
+	if !exists || list.UserID != userID {
 		return nil, ErrListNotFound
 	}
 
@@ -251,12 +258,13 @@ func (s *Storage) GetTodoByID(listID, todoID uuid.UUID) (*models.Todo, error) {
 	return &todoCopy, nil
 }
 
-// UpdateTodo updates an existing todo
-func (s *Storage) UpdateTodo(listID, todoID uuid.UUID, req models.UpdateTodoRequest) (*models.Todo, error) {
+// UpdateTodo updates an existing todo in a list owned by a specific user
+func (s *Storage) UpdateTodo(userID, listID, todoID uuid.UUID, req models.UpdateTodoRequest) (*models.Todo, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.lists[listID]; !exists {
+	list, exists := s.lists[listID]
+	if !exists || list.UserID != userID {
 		return nil, ErrListNotFound
 	}
 
@@ -293,12 +301,13 @@ func (s *Storage) UpdateTodo(listID, todoID uuid.UUID, req models.UpdateTodoRequ
 	return &todoCopy, nil
 }
 
-// DeleteTodo deletes a todo
-func (s *Storage) DeleteTodo(listID, todoID uuid.UUID) error {
+// DeleteTodo deletes a todo from a list owned by a specific user
+func (s *Storage) DeleteTodo(userID, listID, todoID uuid.UUID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.lists[listID]; !exists {
+	list, exists := s.lists[listID]
+	if !exists || list.UserID != userID {
 		return ErrListNotFound
 	}
 

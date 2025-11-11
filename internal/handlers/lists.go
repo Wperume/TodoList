@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"todolist-api/internal/middleware"
 	"todolist-api/internal/models"
 	"todolist-api/internal/storage"
 
@@ -23,6 +24,16 @@ func NewListHandler(store storage.Store) *ListHandler {
 
 // GetAllLists handles GET /lists
 func (h *ListHandler) GetAllLists(c *gin.Context) {
+	// Get authenticated user ID
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Code:    "UNAUTHORIZED",
+			Message: "Authentication required",
+		})
+		return
+	}
+
 	// Parse query parameters
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
@@ -35,7 +46,7 @@ func (h *ListHandler) GetAllLists(c *gin.Context) {
 		limit = 20
 	}
 
-	lists, pagination, err := h.storage.GetAllLists(page, limit)
+	lists, pagination, err := h.storage.GetAllLists(userID, page, limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Code:    "INTERNAL_ERROR",
@@ -52,6 +63,16 @@ func (h *ListHandler) GetAllLists(c *gin.Context) {
 
 // CreateList handles POST /lists
 func (h *ListHandler) CreateList(c *gin.Context) {
+	// Get authenticated user ID
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Code:    "UNAUTHORIZED",
+			Message: "Authentication required",
+		})
+		return
+	}
+
 	var req models.CreateTodoListRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -62,7 +83,7 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 		return
 	}
 
-	list, err := h.storage.CreateList(req)
+	list, err := h.storage.CreateList(userID, req)
 	if err != nil {
 		if err == storage.ErrListNameExists {
 			c.JSON(http.StatusConflict, models.ErrorResponse{
@@ -83,6 +104,16 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 
 // GetListByID handles GET /lists/:listId
 func (h *ListHandler) GetListByID(c *gin.Context) {
+	// Get authenticated user ID
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Code:    "UNAUTHORIZED",
+			Message: "Authentication required",
+		})
+		return
+	}
+
 	listID, err := uuid.Parse(c.Param("listId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -92,7 +123,7 @@ func (h *ListHandler) GetListByID(c *gin.Context) {
 		return
 	}
 
-	list, err := h.storage.GetListByID(listID)
+	list, err := h.storage.GetListByID(userID, listID)
 	if err != nil {
 		if err == storage.ErrListNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{
@@ -113,6 +144,16 @@ func (h *ListHandler) GetListByID(c *gin.Context) {
 
 // UpdateList handles PUT /lists/:listId
 func (h *ListHandler) UpdateList(c *gin.Context) {
+	// Get authenticated user ID
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Code:    "UNAUTHORIZED",
+			Message: "Authentication required",
+		})
+		return
+	}
+
 	listID, err := uuid.Parse(c.Param("listId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -132,7 +173,7 @@ func (h *ListHandler) UpdateList(c *gin.Context) {
 		return
 	}
 
-	list, err := h.storage.UpdateList(listID, req)
+	list, err := h.storage.UpdateList(userID, listID, req)
 	if err != nil {
 		if err == storage.ErrListNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{
@@ -160,6 +201,16 @@ func (h *ListHandler) UpdateList(c *gin.Context) {
 
 // DeleteList handles DELETE /lists/:listId
 func (h *ListHandler) DeleteList(c *gin.Context) {
+	// Get authenticated user ID
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Code:    "UNAUTHORIZED",
+			Message: "Authentication required",
+		})
+		return
+	}
+
 	listID, err := uuid.Parse(c.Param("listId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -169,7 +220,7 @@ func (h *ListHandler) DeleteList(c *gin.Context) {
 		return
 	}
 
-	err = h.storage.DeleteList(listID)
+	err = h.storage.DeleteList(userID, listID)
 	if err != nil {
 		if err == storage.ErrListNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{

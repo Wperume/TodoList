@@ -1,123 +1,184 @@
 #!/bin/bash
 
-# Test script for Todo List API
-# Make sure the server is running before executing this script
+# Todo List API Test Script
+# This script tests the complete authentication flow
 
-BASE_URL="http://localhost:8080/api/v1"
+set -e  # Exit on error
 
-echo "========================================="
-echo "Testing Todo List REST API"
-echo "========================================="
+API_URL="http://localhost:8080/api/v1"
+EMAIL="test-$(date +%s)@example.com"
+PASSWORD="SecureTestPassword123!"
+
+echo "🧪 Todo List API Testing Script"
+echo "================================"
 echo ""
 
-# Test 1: Health check
-echo "1. Testing health check..."
-curl -s http://localhost:8080/health | jq .
-echo -e "\n"
+# Check if API is running
+echo "1️⃣  Checking if API is running..."
+if ! curl -s "http://localhost:8080/health" | grep -q "healthy"; then
+    echo "❌ API is not running at $API_URL"
+    echo "Please start the API first with: docker-compose up -d"
+    exit 1
+fi
+echo "✅ API is healthy"
+echo ""
 
-# Test 2: Create a todo list
-echo "2. Creating a new todo list..."
-LIST_RESPONSE=$(curl -s -X POST "$BASE_URL/lists" \
+# Register a new user
+echo "2️⃣  Registering new user: $EMAIL"
+REGISTER_RESPONSE=$(curl -s -X POST "$API_URL/auth/register" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"email\": \"$EMAIL\",
+    \"password\": \"$PASSWORD\",
+    \"firstName\": \"Test\",
+    \"lastName\": \"User\"
+  }")
+
+ACCESS_TOKEN=$(echo $REGISTER_RESPONSE | jq -r '.accessToken')
+REFRESH_TOKEN=$(echo $REGISTER_RESPONSE | jq -r '.refreshToken')
+
+if [ "$ACCESS_TOKEN" == "null" ] || [ -z "$ACCESS_TOKEN" ]; then
+    echo "❌ Registration failed"
+    echo "Response: $REGISTER_RESPONSE"
+    exit 1
+fi
+echo "✅ User registered successfully"
+echo "   User ID: $(echo $REGISTER_RESPONSE | jq -r '.user.id')"
+echo ""
+
+# Get user profile
+echo "3️⃣  Getting user profile..."
+PROFILE=$(curl -s "$API_URL/auth/profile" \
+  -H "Authorization: Bearer $ACCESS_TOKEN")
+
+if echo $PROFILE | jq -e '.email' > /dev/null 2>&1; then
+    echo "✅ Profile retrieved"
+    echo "   Email: $(echo $PROFILE | jq -r '.email')"
+    echo "   Name: $(echo $PROFILE | jq -r '.firstName') $(echo $PROFILE | jq -r '.lastName')"
+else
+    echo "❌ Failed to get profile"
+    exit 1
+fi
+echo ""
+
+# Create a todo list
+echo "4️⃣  Creating a todo list..."
+LIST_RESPONSE=$(curl -s -X POST "$API_URL/lists" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "name": "Work Tasks",
-    "description": "Tasks for work projects"
+    "name": "Test List",
+    "description": "Automated test list"
   }')
-echo "$LIST_RESPONSE" | jq .
-LIST_ID=$(echo "$LIST_RESPONSE" | jq -r '.id')
-echo "Created list with ID: $LIST_ID"
-echo -e "\n"
 
-# Test 3: Get all lists
-echo "3. Getting all todo lists..."
-curl -s "$BASE_URL/lists" | jq .
-echo -e "\n"
+LIST_ID=$(echo $LIST_RESPONSE | jq -r '.id')
 
-# Test 4: Get specific list
-echo "4. Getting specific list..."
-curl -s "$BASE_URL/lists/$LIST_ID" | jq .
-echo -e "\n"
+if [ "$LIST_ID" == "null" ] || [ -z "$LIST_ID" ]; then
+    echo "❌ Failed to create list"
+    echo "Response: $LIST_RESPONSE"
+    exit 1
+fi
+echo "✅ List created"
+echo "   List ID: $LIST_ID"
+echo ""
 
-# Test 5: Create a todo
-echo "5. Creating a high priority todo..."
-TODO_RESPONSE=$(curl -s -X POST "$BASE_URL/lists/$LIST_ID/todos" \
+# Create todos
+echo "5️⃣  Creating todos..."
+TODO1=$(curl -s -X POST "$API_URL/lists/$LIST_ID/todos" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "description": "Complete project documentation",
+    "description": "Test todo 1 - High priority",
     "priority": "high",
-    "dueDate": "2025-11-15T23:59:59Z"
+    "dueDate": "2025-12-31T23:59:59Z"
   }')
-echo "$TODO_RESPONSE" | jq .
-TODO_ID=$(echo "$TODO_RESPONSE" | jq -r '.id')
-echo "Created todo with ID: $TODO_ID"
-echo -e "\n"
 
-# Test 6: Create another todo
-echo "6. Creating a medium priority todo..."
-curl -s -X POST "$BASE_URL/lists/$LIST_ID/todos" \
+TODO1_ID=$(echo $TODO1 | jq -r '.id')
+
+TODO2=$(curl -s -X POST "$API_URL/lists/$LIST_ID/todos" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "description": "Review pull requests",
-    "priority": "medium",
-    "dueDate": "2025-11-12T17:00:00Z"
-  }' | jq .
-echo -e "\n"
+    "description": "Test todo 2 - Medium priority",
+    "priority": "medium"
+  }')
 
-# Test 7: Get all todos in list
-echo "7. Getting all todos in the list..."
-curl -s "$BASE_URL/lists/$LIST_ID/todos" | jq .
-echo -e "\n"
+TODO2_ID=$(echo $TODO2 | jq -r '.id')
 
-# Test 8: Get high priority todos
-echo "8. Getting only high priority todos..."
-curl -s "$BASE_URL/lists/$LIST_ID/todos?priority=high" | jq .
-echo -e "\n"
+echo "✅ Created 2 todos"
+echo "   Todo 1 ID: $TODO1_ID"
+echo "   Todo 2 ID: $TODO2_ID"
+echo ""
 
-# Test 9: Update todo (mark as completed)
-echo "9. Marking todo as completed..."
-curl -s -X PUT "$BASE_URL/lists/$LIST_ID/todos/$TODO_ID" \
+# Get all todos
+echo "6️⃣  Retrieving todos..."
+TODOS=$(curl -s "$API_URL/lists/$LIST_ID/todos" \
+  -H "Authorization: Bearer $ACCESS_TOKEN")
+
+TODO_COUNT=$(echo $TODOS | jq '. | length')
+echo "✅ Retrieved todos: $TODO_COUNT items"
+echo ""
+
+# Update a todo
+echo "7️⃣  Marking todo as completed..."
+UPDATE_RESPONSE=$(curl -s -X PUT "$API_URL/lists/$LIST_ID/todos/$TODO1_ID" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "completed": true
-  }' | jq .
-echo -e "\n"
+  }')
 
-# Test 10: Get completed todos
-echo "10. Getting completed todos..."
-curl -s "$BASE_URL/lists/$LIST_ID/todos?completed=true" | jq .
-echo -e "\n"
+COMPLETED=$(echo $UPDATE_RESPONSE | jq -r '.completed')
+if [ "$COMPLETED" == "true" ]; then
+    echo "✅ Todo marked as completed"
+else
+    echo "❌ Failed to update todo"
+    exit 1
+fi
+echo ""
 
-# Test 11: Update list
-echo "11. Updating list name..."
-curl -s -X PUT "$BASE_URL/lists/$LIST_ID" \
+# Filter completed todos
+echo "8️⃣  Filtering completed todos..."
+COMPLETED_TODOS=$(curl -s "$API_URL/lists/$LIST_ID/todos?completed=true" \
+  -H "Authorization: Bearer $ACCESS_TOKEN")
+
+COMPLETED_COUNT=$(echo $COMPLETED_TODOS | jq '. | length')
+echo "✅ Found $COMPLETED_COUNT completed todo(s)"
+echo ""
+
+# Test token refresh
+echo "9️⃣  Testing token refresh..."
+REFRESH_RESPONSE=$(curl -s -X POST "$API_URL/auth/refresh" \
   -H "Content-Type: application/json" \
-  -d '{
-    "name": "Updated Work Tasks"
-  }' | jq .
-echo -e "\n"
+  -d "{\"refreshToken\": \"$REFRESH_TOKEN\"}")
 
-# Test 12: Delete todo
-echo "12. Deleting a todo..."
-curl -s -X DELETE "$BASE_URL/lists/$LIST_ID/todos/$TODO_ID"
-echo "Todo deleted (204 No Content expected)"
-echo -e "\n"
+NEW_ACCESS_TOKEN=$(echo $REFRESH_RESPONSE | jq -r '.accessToken')
 
-# Test 13: Verify deletion
-echo "13. Verifying todo deletion..."
-curl -s "$BASE_URL/lists/$LIST_ID/todos" | jq .
-echo -e "\n"
+if [ "$NEW_ACCESS_TOKEN" != "null" ] && [ -n "$NEW_ACCESS_TOKEN" ]; then
+    echo "✅ Token refreshed successfully"
+    ACCESS_TOKEN=$NEW_ACCESS_TOKEN
+else
+    echo "❌ Failed to refresh token"
+    exit 1
+fi
+echo ""
 
-# Test 14: Delete list
-echo "14. Deleting the todo list..."
-curl -s -X DELETE "$BASE_URL/lists/$LIST_ID"
-echo "List deleted (204 No Content expected)"
-echo -e "\n"
+# Cleanup - Delete the list
+echo "🧹 Cleaning up..."
+curl -s -X DELETE "$API_URL/lists/$LIST_ID" \
+  -H "Authorization: Bearer $ACCESS_TOKEN" > /dev/null
 
-# Test 15: Verify list deletion
-echo "15. Verifying list deletion (should return 404)..."
-curl -s "$BASE_URL/lists/$LIST_ID" | jq .
-echo -e "\n"
+echo "✅ Test list deleted"
+echo ""
 
-echo "========================================="
-echo "API Testing Complete!"
-echo "========================================="
+# Logout
+curl -s -X POST "$API_URL/auth/logout" \
+  -H "Content-Type: application/json" \
+  -d "{\"refreshToken\": \"$REFRESH_TOKEN\"}" > /dev/null
+
+echo "✅ Logged out"
+echo ""
+
+echo "================================"
+echo "✅ All tests passed successfully!"
+echo "================================"

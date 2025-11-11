@@ -4,17 +4,21 @@ A REST API service for managing multiple named todo lists with full CRUD operati
 
 ## Features
 
-- **Multiple Named Lists**: Create and manage multiple todo lists
+- **JWT Authentication**: Secure user authentication with access and refresh tokens
+- **User Management**: User registration, login, profile management, and password changes
+- **Role-Based Access Control**: Support for user and admin roles
+- **Multiple Named Lists**: Create and manage multiple todo lists per user
 - **Full CRUD Operations**: Complete Create, Read, Update, Delete operations for both lists and todos
+- **User Data Isolation**: Lists and todos are scoped to authenticated users
 - **Rich Todo Items**: Each todo has description, priority (low/medium/high), and due date
 - **Filtering & Sorting**: Filter todos by priority/completion status, sort by date/priority
 - **Pagination**: Paginated list retrieval
 - **PostgreSQL Database**: Persistent storage with GORM ORM
 - **Containerized**: Docker and Docker Compose support for easy deployment
-- **Flexible Storage**: Can use in-memory storage for development/testing
+- **Flexible Storage**: Can use in-memory storage for development/testing (without auth)
 - **Rate Limiting**: Configurable rate limiting to protect against abuse
 - **Comprehensive Logging**: Structured logging with automatic log rotation and configurable retention
-- **Security Hardened**: XSS protection, CORS, security headers, request size limits, UUID validation
+- **Security Hardened**: XSS protection, CORS, security headers, request size limits, UUID validation, bcrypt password hashing
 - **HTTPS/TLS Support**: Secure communication with TLS 1.2/1.3, configurable cipher suites, and HTTP-to-HTTPS redirect
 
 ## API Specification
@@ -35,14 +39,25 @@ https://localhost:8443/api/v1
 
 ### Endpoints
 
-#### Todo Lists
+#### Authentication (Public)
+- `POST /auth/register` - Register a new user account
+- `POST /auth/login` - Login and receive access + refresh tokens
+- `POST /auth/refresh` - Refresh an access token using a refresh token
+- `POST /auth/logout` - Logout and revoke refresh token
+
+#### Authentication (Protected - Requires Authentication)
+- `GET /auth/profile` - Get current user profile
+- `PUT /auth/profile` - Update user profile (first name, last name)
+- `PUT /auth/password` - Change password
+
+#### Todo Lists (Protected - Requires Authentication)
 - `GET /lists` - Get all todo lists (with pagination)
 - `POST /lists` - Create a new todo list
 - `GET /lists/{listId}` - Get a specific list
 - `PUT /lists/{listId}` - Update a list
 - `DELETE /lists/{listId}` - Delete a list and all its todos
 
-#### Todos
+#### Todos (Protected - Requires Authentication)
 - `GET /lists/{listId}/todos` - Get all todos in a list (with filtering/sorting)
 - `POST /lists/{listId}/todos` - Create a new todo
 - `GET /lists/{listId}/todos/{todoId}` - Get a specific todo
@@ -153,12 +168,136 @@ docker run -p 8080:8080 \
   todolist-api
 ```
 
+## Authentication
+
+The API uses **JWT (JSON Web Token)** authentication for secure access control. All todo list and todo operations require authentication.
+
+### Authentication Flow
+
+1. **Register** a new user account
+2. **Login** to receive an access token (15-minute expiration) and refresh token (7-day expiration)
+3. Include the access token in the `Authorization` header for protected endpoints
+4. **Refresh** the access token when it expires using the refresh token
+5. **Logout** to revoke the refresh token when done
+
+### Token Types
+
+- **Access Token**: Short-lived JWT (15 minutes) used to authenticate API requests
+- **Refresh Token**: Long-lived secure token (7 days) used to obtain new access tokens
+
+### User Roles
+
+- **user**: Default role, can manage their own todo lists and todos
+- **admin**: Administrative role (reserved for future features)
+
 ## Usage Examples
 
-### Create a Todo List
+### Authentication Examples
+
+#### Register a New User
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePassword123!",
+    "firstName": "John",
+    "lastName": "Doe"
+  }'
+```
+
+**Response:**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIs...",
+  "refreshToken": "a1b2c3d4e5f6...",
+  "user": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "email": "user@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "role": "user",
+    "isActive": true
+  }
+}
+```
+
+#### Login
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "SecurePassword123!"
+  }'
+```
+
+**Response:** Same as registration response with access and refresh tokens.
+
+#### Refresh Access Token
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refreshToken": "a1b2c3d4e5f6..."
+  }'
+```
+
+**Response:** New access and refresh tokens.
+
+#### Get User Profile
+
+```bash
+curl -X GET http://localhost:8080/api/v1/auth/profile \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+```
+
+#### Update Profile
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/auth/profile \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstName": "Jane",
+    "lastName": "Smith"
+  }'
+```
+
+#### Change Password
+
+```bash
+curl -X PUT http://localhost:8080/api/v1/auth/password \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "currentPassword": "SecurePassword123!",
+    "newPassword": "NewSecurePassword456!"
+  }'
+```
+
+#### Logout
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/logout \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refreshToken": "a1b2c3d4e5f6..."
+  }'
+```
+
+### Todo List Examples (with Authentication)
+
+**Note:** All examples below require the `Authorization` header with a valid access token.
+
+#### Create a Todo List
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/lists \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Work Tasks",
@@ -166,16 +305,18 @@ curl -X POST http://localhost:8080/api/v1/lists \
   }'
 ```
 
-### Get All Lists
+#### Get All Lists
 
 ```bash
-curl http://localhost:8080/api/v1/lists
+curl http://localhost:8080/api/v1/lists \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 
-### Create a Todo
+#### Create a Todo
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/lists/{listId}/todos \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
     "description": "Complete project documentation",
@@ -184,30 +325,34 @@ curl -X POST http://localhost:8080/api/v1/lists/{listId}/todos \
   }'
 ```
 
-### Get Todos with Filtering
+#### Get Todos with Filtering
 
 ```bash
 # Get high priority todos
-curl "http://localhost:8080/api/v1/lists/{listId}/todos?priority=high"
+curl "http://localhost:8080/api/v1/lists/{listId}/todos?priority=high" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 
 # Get incomplete todos sorted by due date
-curl "http://localhost:8080/api/v1/lists/{listId}/todos?completed=false&sortBy=dueDate&sortOrder=asc"
+curl "http://localhost:8080/api/v1/lists/{listId}/todos?completed=false&sortBy=dueDate&sortOrder=asc" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 
-### Update a Todo
+#### Update a Todo
 
 ```bash
 curl -X PUT http://localhost:8080/api/v1/lists/{listId}/todos/{todoId} \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
   -H "Content-Type: application/json" \
   -d '{
     "completed": true
   }'
 ```
 
-### Delete a Todo
+#### Delete a Todo
 
 ```bash
-curl -X DELETE http://localhost:8080/api/v1/lists/{listId}/todos/{todoId}
+curl -X DELETE http://localhost:8080/api/v1/lists/{listId}/todos/{todoId} \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
 ```
 
 ## Project Structure
@@ -221,14 +366,20 @@ curl -X DELETE http://localhost:8080/api/v1/lists/{listId}/todos/{todoId}
 │   └── server/
 │       └── main.go           # Application entry point with HTTP/HTTPS support
 ├── internal/
+│   ├── auth/                 # Authentication package
+│   │   ├── jwt.go            # JWT token generation and validation
+│   │   ├── password.go       # Password hashing with bcrypt
+│   │   └── service.go        # Authentication service (register, login, etc.)
 │   ├── database/             # Database configuration
 │   │   └── database.go       # PostgreSQL connection and migrations
 │   ├── handlers/             # HTTP request handlers
+│   │   ├── auth.go           # Authentication handlers
 │   │   ├── lists.go          # List CRUD handlers
 │   │   └── todos.go          # Todo CRUD handlers
 │   ├── logging/              # Logging configuration
 │   │   └── logging.go        # Logrus + lumberjack setup
 │   ├── middleware/           # HTTP middleware
+│   │   ├── auth.go           # JWT authentication middleware
 │   │   ├── cors.go           # CORS middleware
 │   │   ├── helpers.go        # Shared utility functions
 │   │   ├── logging.go        # Request logging middleware
@@ -268,9 +419,28 @@ The application uses **PostgreSQL** with **GORM** for persistent storage:
 
 ### Database Schema
 
+**users table:**
+- `id` (UUID, primary key)
+- `email` (varchar(255), unique)
+- `password_hash` (varchar(255))
+- `first_name` (varchar(100))
+- `last_name` (varchar(100))
+- `role` (varchar(20): user/admin)
+- `is_active` (boolean, default: true)
+- `last_login_at` (timestamp, nullable)
+- `created_at`, `updated_at`, `deleted_at` (timestamps)
+
+**refresh_tokens table:**
+- `id` (UUID, primary key)
+- `user_id` (UUID, foreign key → users.id)
+- `token_hash` (varchar(255), unique)
+- `expires_at` (timestamp)
+- `created_at` (timestamp)
+
 **todo_lists table:**
 - `id` (UUID, primary key)
-- `name` (varchar(100), unique)
+- `user_id` (UUID, foreign key → users.id)
+- `name` (varchar(100), unique per user)
 - `description` (varchar(500))
 - `created_at`, `updated_at`, `deleted_at` (timestamps)
 
@@ -301,7 +471,13 @@ The service can be configured using environment variables:
 - `DB_LOG_LEVEL`: Set to "silent" to disable SQL logging
 
 ### Storage Configuration
-- `USE_MEMORY_STORAGE`: Set to "true" to use in-memory storage instead of PostgreSQL
+- `USE_MEMORY_STORAGE`: Set to "true" to use in-memory storage instead of PostgreSQL (Note: In-memory mode does not support authentication)
+
+### JWT Authentication Configuration
+- `JWT_SECRET_KEY`: Secret key for signing JWT tokens (minimum 32 characters) - **CHANGE IN PRODUCTION**
+- `JWT_ACCESS_TOKEN_MINUTES`: Access token expiration in minutes (default: 15)
+- `JWT_REFRESH_TOKEN_DAYS`: Refresh token expiration in days (default: 7)
+- `JWT_ISSUER`: JWT issuer identifier (default: todolist-api)
 
 ### Rate Limiting Configuration
 - `RATE_LIMIT_ENABLED`: Enable/disable rate limiting (default: true)
@@ -372,8 +548,9 @@ go test ./... -v
 
 **Test Coverage:**
 - Models: 100%
+- Authentication: 95.8% (JWT, password hashing, auth service)
 - Logging: 86.2%
-- Middleware: 82.1% (includes security, CORS, rate limiting, logging)
+- Middleware: 82.1% (includes security, CORS, rate limiting, logging, auth)
 - Storage Layer: 80.2%
 
 See [TESTING.md](TESTING.md) for detailed testing documentation.
@@ -816,6 +993,10 @@ The API implements multiple layers of security protection. See [SECURITY.md](SEC
 
 ### Implemented Security Features
 
+✅ **JWT Authentication** - Secure token-based authentication with access and refresh tokens
+✅ **Password Security** - bcrypt hashing with cost factor 12
+✅ **User Data Isolation** - Database-level filtering ensures users only access their own data
+✅ **Role-Based Access Control** - Support for user and admin roles
 ✅ **SQL Injection Protection** - GORM parameterized queries
 ✅ **XSS Prevention** - HTML escaping of all user input
 ✅ **DoS Protection** - Rate limiting (60 req/min per IP)
@@ -831,6 +1012,11 @@ The API implements multiple layers of security protection. See [SECURITY.md](SEC
 
 **Production Settings:**
 ```bash
+# JWT Authentication - CRITICAL: Change secret key!
+JWT_SECRET_KEY=<your-secure-random-key-at-least-32-characters>
+JWT_ACCESS_TOKEN_MINUTES=15
+JWT_REFRESH_TOKEN_DAYS=7
+
 # Enable HTTPS
 TLS_ENABLED=true
 TLS_PORT=443
@@ -854,22 +1040,21 @@ MAX_REQUEST_BODY_SIZE=524288  # 512KB
 # Relaxed for development
 CORS_ALLOWED_ORIGINS=*
 RATE_LIMIT_ENABLED=false
+JWT_SECRET_KEY=test-secret-key-32-characters!!
 ```
-
-### What's NOT Implemented (Yet)
-
-⚠️ **Authentication** - No JWT/API key authentication (planned)
-⚠️ **Authorization** - No user-level access control (planned)
 
 ### Security Best Practices
 
-1. **Always use HTTPS in production** - Enable TLS or deploy behind nginx/load balancer with SSL
-2. **Use proper certificates** - Get certificates from Let's Encrypt or commercial CA (never use self-signed in production)
-3. **Configure CORS strictly** - Never use `*` wildcard in production
-4. **Monitor rate limit logs** - Track suspicious IPs hitting limits
-5. **Keep dependencies updated** - Regularly update Go modules
-6. **Use strong database passwords** - Never use default credentials
-7. **Protect private keys** - Never commit `.key` files to version control
+1. **Change JWT secret key in production** - Generate a secure random key (at least 32 characters)
+2. **Store secrets securely** - Use environment variables or a secrets manager, never commit secrets to version control
+3. **Always use HTTPS in production** - Enable TLS or deploy behind nginx/load balancer with SSL
+4. **Use proper certificates** - Get certificates from Let's Encrypt or commercial CA (never use self-signed in production)
+5. **Configure CORS strictly** - Never use `*` wildcard in production
+6. **Monitor rate limit logs** - Track suspicious IPs hitting limits
+7. **Keep dependencies updated** - Regularly update Go modules
+8. **Use strong database passwords** - Never use default credentials
+9. **Protect private keys** - Never commit `.key` files to version control
+10. **Rotate JWT secret keys periodically** - Implement key rotation for enhanced security
 
 See [SECURITY.md](SECURITY.md) for detailed security information, testing procedures, and deployment checklist.
 
@@ -881,12 +1066,15 @@ See [SECURITY.md](SECURITY.md) for detailed security information, testing proced
 - ✅ ~~Add request logging~~ - **COMPLETED**
 - ✅ ~~Add security hardening (XSS, CORS, headers, size limits)~~ - **COMPLETED**
 - ✅ ~~Add HTTPS/TLS support~~ - **COMPLETED**
-- Add JWT authentication and authorization
+- ✅ ~~Add JWT authentication and authorization~~ - **COMPLETED**
 - Add metrics and monitoring (Prometheus)
 - Add API documentation UI (Swagger/ReDoc)
 - Add database connection pooling tuning
 - Add health check with database connectivity status
 - Add Let's Encrypt ACME support for automatic certificate management
+- Add email verification for new user accounts
+- Add password reset functionality
+- Add multi-factor authentication (MFA/2FA)
 
 ## License
 

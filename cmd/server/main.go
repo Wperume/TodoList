@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"todolist-api/internal/auth"
 	"todolist-api/internal/database"
 	"todolist-api/internal/handlers"
 	"todolist-api/internal/logging"
@@ -34,9 +35,12 @@ func main() {
 
 	var listHandler *handlers.ListHandler
 	var todoHandler *handlers.TodoHandler
+	var authHandler *handlers.AuthHandler
+	var jwtConfig *auth.JWTConfig
 
 	if useInMemory {
 		logging.Logger.Info("Using in-memory storage")
+		logging.Logger.Warn("In-memory storage does not support authentication - API will run without auth")
 		store := storage.NewStorage()
 		listHandler = handlers.NewListHandler(store)
 		todoHandler = handlers.NewTodoHandler(store)
@@ -54,6 +58,14 @@ func main() {
 		}
 
 		logging.Logger.Info("PostgreSQL storage initialized successfully")
+
+		// Initialize JWT configuration
+		jwtConfig = auth.NewJWTConfigFromEnv()
+
+		// Initialize authentication service
+		authService := auth.NewService(db, jwtConfig)
+		authHandler = handlers.NewAuthHandler(authService)
+
 		// Initialize PostgreSQL storage
 		store := storage.NewPostgresStorage(db)
 		listHandler = handlers.NewListHandler(store)
@@ -88,8 +100,27 @@ func main() {
 	// API version 1 routes
 	v1 := router.Group("/api/v1")
 	{
-		// Todo List routes
+		// Authentication routes (public - no auth required)
+		if authHandler != nil {
+			auth := v1.Group("/auth")
+			{
+				auth.POST("/register", authHandler.Register)
+				auth.POST("/login", authHandler.Login)
+				auth.POST("/refresh", authHandler.RefreshToken)
+				auth.POST("/logout", authHandler.Logout)
+
+				// Protected auth routes (require authentication)
+				auth.GET("/profile", middleware.AuthMiddleware(jwtConfig), authHandler.GetProfile)
+				auth.PUT("/profile", middleware.AuthMiddleware(jwtConfig), authHandler.UpdateProfile)
+				auth.PUT("/password", middleware.AuthMiddleware(jwtConfig), authHandler.ChangePassword)
+			}
+		}
+
+		// Todo List routes (protected - require authentication)
 		lists := v1.Group("/lists")
+		if jwtConfig != nil {
+			lists.Use(middleware.AuthMiddleware(jwtConfig))
+		}
 		{
 			lists.GET("", listHandler.GetAllLists)
 			lists.POST("", listHandler.CreateList)

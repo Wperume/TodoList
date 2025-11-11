@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"todolist-api/internal/middleware"
 	"todolist-api/internal/models"
 	"todolist-api/internal/storage"
 
@@ -22,6 +23,16 @@ func NewTodoHandler(store storage.Store) *TodoHandler {
 
 // GetTodosByList handles GET /lists/:listId/todos
 func (h *TodoHandler) GetTodosByList(c *gin.Context) {
+	// Get authenticated user ID
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Code:    "UNAUTHORIZED",
+			Message: "Authentication required",
+		})
+		return
+	}
+
 	listID, err := uuid.Parse(c.Param("listId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -81,7 +92,7 @@ func (h *TodoHandler) GetTodosByList(c *gin.Context) {
 		return
 	}
 
-	todos, err := h.storage.GetTodosByList(listID, priority, completed, sortBy, sortOrder)
+	todos, err := h.storage.GetTodosByList(userID, listID, priority, completed, sortBy, sortOrder)
 	if err != nil {
 		if err == storage.ErrListNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{
@@ -102,6 +113,16 @@ func (h *TodoHandler) GetTodosByList(c *gin.Context) {
 
 // CreateTodo handles POST /lists/:listId/todos
 func (h *TodoHandler) CreateTodo(c *gin.Context) {
+	// Get authenticated user ID
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Code:    "UNAUTHORIZED",
+			Message: "Authentication required",
+		})
+		return
+	}
+
 	listID, err := uuid.Parse(c.Param("listId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -121,7 +142,7 @@ func (h *TodoHandler) CreateTodo(c *gin.Context) {
 		return
 	}
 
-	todo, err := h.storage.CreateTodo(listID, req)
+	todo, err := h.storage.CreateTodo(userID, listID, req)
 	if err != nil {
 		if err == storage.ErrListNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{
@@ -142,6 +163,16 @@ func (h *TodoHandler) CreateTodo(c *gin.Context) {
 
 // GetTodoByID handles GET /lists/:listId/todos/:todoId
 func (h *TodoHandler) GetTodoByID(c *gin.Context) {
+	// Get authenticated user ID
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Code:    "UNAUTHORIZED",
+			Message: "Authentication required",
+		})
+		return
+	}
+
 	listID, err := uuid.Parse(c.Param("listId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -160,7 +191,7 @@ func (h *TodoHandler) GetTodoByID(c *gin.Context) {
 		return
 	}
 
-	todo, err := h.storage.GetTodoByID(listID, todoID)
+	todo, err := h.storage.GetTodoByID(userID, listID, todoID)
 	if err != nil {
 		if err == storage.ErrListNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{
@@ -188,6 +219,16 @@ func (h *TodoHandler) GetTodoByID(c *gin.Context) {
 
 // UpdateTodo handles PUT /lists/:listId/todos/:todoId
 func (h *TodoHandler) UpdateTodo(c *gin.Context) {
+	// Get authenticated user ID
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Code:    "UNAUTHORIZED",
+			Message: "Authentication required",
+		})
+		return
+	}
+
 	listID, err := uuid.Parse(c.Param("listId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -216,7 +257,7 @@ func (h *TodoHandler) UpdateTodo(c *gin.Context) {
 		return
 	}
 
-	todo, err := h.storage.UpdateTodo(listID, todoID, req)
+	todo, err := h.storage.UpdateTodo(userID, listID, todoID, req)
 	if err != nil {
 		if err == storage.ErrListNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{
@@ -244,6 +285,16 @@ func (h *TodoHandler) UpdateTodo(c *gin.Context) {
 
 // DeleteTodo handles DELETE /lists/:listId/todos/:todoId
 func (h *TodoHandler) DeleteTodo(c *gin.Context) {
+	// Get authenticated user ID
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Code:    "UNAUTHORIZED",
+			Message: "Authentication required",
+		})
+		return
+	}
+
 	listID, err := uuid.Parse(c.Param("listId"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
@@ -262,7 +313,7 @@ func (h *TodoHandler) DeleteTodo(c *gin.Context) {
 		return
 	}
 
-	err = h.storage.DeleteTodo(listID, todoID)
+	err = h.storage.DeleteTodo(userID, listID, todoID)
 	if err != nil {
 		if err == storage.ErrListNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{
