@@ -138,15 +138,23 @@ go run cmd/server/main.go
 
 The server will automatically run database migrations on startup.
 
-#### Option 2: With In-Memory Storage (Development Only)
+#### Option 2: With In-Memory Storage (No Authentication)
 
-For quick testing without PostgreSQL:
+For quick testing without PostgreSQL or authentication:
 
 ```bash
-USE_MEMORY_STORAGE=true go run cmd/server/main.go
+# Build first
+go build -o todolist-api ./cmd/server
+
+# Run in memory mode (no auth required)
+USE_MEMORY_STORAGE=true ./todolist-api
 ```
 
-Note: Data will be lost when the server restarts.
+**Important:** In-memory mode runs **without authentication** - all endpoints are public.
+- ✅ Perfect for quick testing and demos
+- ⚠️ Data lost on restart
+- ❌ No user accounts or JWT tokens
+- See [MEMORY_MODE.md](MEMORY_MODE.md) for complete documentation
 
 ### Running with Docker Only
 
@@ -471,7 +479,7 @@ The service can be configured using environment variables:
 - `DB_LOG_LEVEL`: Set to "silent" to disable SQL logging
 
 ### Storage Configuration
-- `USE_MEMORY_STORAGE`: Set to "true" to use in-memory storage instead of PostgreSQL (Note: In-memory mode does not support authentication)
+- `USE_MEMORY_STORAGE`: Set to "true" to use in-memory storage **without authentication** instead of PostgreSQL (see [MEMORY_MODE.md](MEMORY_MODE.md) for details)
 
 ### JWT Authentication Configuration
 - `JWT_SECRET_KEY`: Secret key for signing JWT tokens (minimum 32 characters) - **CHANGE IN PRODUCTION**

@@ -24,15 +24,8 @@ func NewListHandler(store storage.Store) *ListHandler {
 
 // GetAllLists handles GET /lists
 func (h *ListHandler) GetAllLists(c *gin.Context) {
-	// Get authenticated user ID
-	userID, err := middleware.GetUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Code:    "UNAUTHORIZED",
-			Message: "Authentication required",
-		})
-		return
-	}
+	// Get user ID (or default for unauthenticated access)
+	userID := middleware.GetUserIDOrDefault(c)
 
 	// Parse query parameters
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
@@ -63,15 +56,8 @@ func (h *ListHandler) GetAllLists(c *gin.Context) {
 
 // CreateList handles POST /lists
 func (h *ListHandler) CreateList(c *gin.Context) {
-	// Get authenticated user ID
-	userID, err := middleware.GetUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Code:    "UNAUTHORIZED",
-			Message: "Authentication required",
-		})
-		return
-	}
+	// Get user ID (or default for unauthenticated access)
+	userID := middleware.GetUserIDOrDefault(c)
 
 	var req models.CreateTodoListRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -104,15 +90,8 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 
 // GetListByID handles GET /lists/:listId
 func (h *ListHandler) GetListByID(c *gin.Context) {
-	// Get authenticated user ID
-	userID, err := middleware.GetUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Code:    "UNAUTHORIZED",
-			Message: "Authentication required",
-		})
-		return
-	}
+	// Get user ID (or default for unauthenticated access)
+	userID := middleware.GetUserIDOrDefault(c)
 
 	listID, err := uuid.Parse(c.Param("listId"))
 	if err != nil {
@@ -144,15 +123,8 @@ func (h *ListHandler) GetListByID(c *gin.Context) {
 
 // UpdateList handles PUT /lists/:listId
 func (h *ListHandler) UpdateList(c *gin.Context) {
-	// Get authenticated user ID
-	userID, err := middleware.GetUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Code:    "UNAUTHORIZED",
-			Message: "Authentication required",
-		})
-		return
-	}
+	// Get user ID (or default for unauthenticated access)
+	userID := middleware.GetUserIDOrDefault(c)
 
 	listID, err := uuid.Parse(c.Param("listId"))
 	if err != nil {
@@ -201,15 +173,8 @@ func (h *ListHandler) UpdateList(c *gin.Context) {
 
 // DeleteList handles DELETE /lists/:listId
 func (h *ListHandler) DeleteList(c *gin.Context) {
-	// Get authenticated user ID
-	userID, err := middleware.GetUserID(c)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
-			Code:    "UNAUTHORIZED",
-			Message: "Authentication required",
-		})
-		return
-	}
+	// Get user ID (or default for unauthenticated access)
+	userID := middleware.GetUserIDOrDefault(c)
 
 	listID, err := uuid.Parse(c.Param("listId"))
 	if err != nil {

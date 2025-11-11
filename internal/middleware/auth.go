@@ -211,3 +211,14 @@ func IsAdmin(c *gin.Context) bool {
 	}
 	return role == models.RoleAdmin
 }
+
+// GetUserIDOrDefault retrieves the user ID from context, or returns a default UUID if not authenticated
+// This is used for in-memory mode where authentication is disabled
+func GetUserIDOrDefault(c *gin.Context) uuid.UUID {
+	userID, err := GetUserID(c)
+	if err != nil {
+		// Return a default user ID for unauthenticated access (in-memory mode)
+		return uuid.MustParse("00000000-0000-0000-0000-000000000000")
+	}
+	return userID
+}
