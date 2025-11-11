@@ -40,3 +40,10 @@ coverage.html
 # Log files
 logs/
 *.log
+
+# TLS certificates (NEVER commit private keys!)
+certs/
+*.key
+*.crt
+*.pem
+*.csr

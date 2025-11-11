@@ -1,13 +1,19 @@
 package main
 
 import (
+	"context"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"todolist-api/internal/database"
 	"todolist-api/internal/handlers"
 	"todolist-api/internal/logging"
 	"todolist-api/internal/middleware"
 	"todolist-api/internal/storage"
+	tlsconfig "todolist-api/internal/tls"
 
 	"github.com/gin-gonic/gin"
 )
@@ -109,9 +115,110 @@ func main() {
 		})
 	})
 
-	// Start server
-	logging.Logger.Infof("Starting server on port %s...", port)
-	if err := router.Run(":" + port); err != nil {
-		logging.Logger.Fatalf("Failed to start server: %v", err)
+	// Check if TLS is enabled
+	tlsConf := tlsconfig.NewTLSConfigFromEnv()
+
+	if tlsConf.Enabled {
+		// Run with HTTPS
+		startHTTPSServer(router, tlsConf, port)
+	} else {
+		// Run with HTTP only
+		startHTTPServer(router, port)
 	}
+}
+
+// startHTTPServer starts an HTTP-only server
+func startHTTPServer(router *gin.Engine, port string) {
+	srv := &http.Server{
+		Addr:           ":" + port,
+		Handler:        router,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20, // 1MB
+	}
+
+	// Start server in goroutine
+	go func() {
+		logging.Logger.Infof("Starting HTTP server on port %s", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logging.Logger.Fatalf("Failed to start HTTP server: %v", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown
+	waitForShutdown(srv)
+}
+
+// startHTTPSServer starts an HTTPS server with optional HTTP redirect
+func startHTTPSServer(router *gin.Engine, tlsConf *tlsconfig.TLSConfig, httpPort string) {
+	// Create TLS config
+	tlsConfig, err := tlsConf.CreateTLSConfig()
+	if err != nil {
+		logging.Logger.Fatalf("Failed to create TLS config: %v", err)
+	}
+
+	// HTTPS server
+	httpsSrv := &http.Server{
+		Addr:           ":" + tlsConf.Port,
+		Handler:        router,
+		TLSConfig:      tlsConfig,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20, // 1MB
+	}
+
+	// Start HTTPS server in goroutine
+	go func() {
+		logging.Logger.Infof("Starting HTTPS server on port %s", tlsConf.Port)
+		if err := httpsSrv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
+			logging.Logger.Fatalf("Failed to start HTTPS server: %v", err)
+		}
+	}()
+
+	// Optional HTTP to HTTPS redirect server
+	var httpSrv *http.Server
+	if tlsConf.RedirectHTTP {
+		httpSrv = &http.Server{
+			Addr:           ":" + httpPort,
+			Handler:        tlsconfig.HTTPSRedirectHandler(tlsConf.Port),
+			ReadTimeout:    10 * time.Second,
+			WriteTimeout:   10 * time.Second,
+			MaxHeaderBytes: 1 << 20, // 1MB
+		}
+
+		go func() {
+			logging.Logger.Infof("Starting HTTP redirect server on port %s -> HTTPS port %s", httpPort, tlsConf.Port)
+			if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				logging.Logger.Errorf("HTTP redirect server error: %v", err)
+			}
+		}()
+	}
+
+	// Wait for interrupt signal to gracefully shutdown both servers
+	waitForShutdown(httpsSrv, httpSrv)
+}
+
+// waitForShutdown waits for interrupt signal and gracefully shuts down servers
+func waitForShutdown(servers ...*http.Server) {
+	// Setup signal catching
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Wait for signal
+	sig := <-quit
+	logging.Logger.Infof("Received signal %v, shutting down gracefully...", sig)
+
+	// Gracefully shutdown servers
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	for _, srv := range servers {
+		if srv != nil {
+			if err := srv.Shutdown(ctx); err != nil {
+				logging.Logger.Errorf("Server shutdown error: %v", err)
+			}
+		}
+	}
+
+	logging.Logger.Info("Server stopped")
 }

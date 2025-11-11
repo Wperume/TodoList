@@ -83,13 +83,27 @@ func Connect(config *Config) (*gorm.DB, error) {
 func AutoMigrate(db *gorm.DB) error {
 	log.Println("Running database migrations...")
 
+	// Migrate in order: User first, then tables that reference it
 	err := db.AutoMigrate(
+		&models.User{},
+		&models.RefreshToken{},
 		&models.TodoList{},
 		&models.Todo{},
 	)
 
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	// Create composite unique index for user_id + list name
+	err = db.Exec(`
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_user_list_name
+		ON todo_lists(user_id, name)
+		WHERE deleted_at IS NULL
+	`).Error
+
+	if err != nil {
+		log.Printf("Warning: failed to create composite index: %v", err)
 	}
 
 	log.Println("Database migrations completed successfully")

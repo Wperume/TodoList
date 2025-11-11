@@ -15,6 +15,7 @@ A REST API service for managing multiple named todo lists with full CRUD operati
 - **Rate Limiting**: Configurable rate limiting to protect against abuse
 - **Comprehensive Logging**: Structured logging with automatic log rotation and configurable retention
 - **Security Hardened**: XSS protection, CORS, security headers, request size limits, UUID validation
+- **HTTPS/TLS Support**: Secure communication with TLS 1.2/1.3, configurable cipher suites, and HTTP-to-HTTPS redirect
 
 ## API Specification
 
@@ -22,8 +23,14 @@ The API follows the OpenAPI 3.0 specification defined in [api/openapi.yaml](api/
 
 ### Base URL
 
+**HTTP (Development):**
 ```
 http://localhost:8080/api/v1
+```
+
+**HTTPS (Production):**
+```
+https://localhost:8443/api/v1
 ```
 
 ### Endpoints
@@ -212,23 +219,40 @@ curl -X DELETE http://localhost:8080/api/v1/lists/{listId}/todos/{todoId}
 │   └── examples.md           # API usage examples
 ├── cmd/
 │   └── server/
-│       └── main.go           # Application entry point
+│       └── main.go           # Application entry point with HTTP/HTTPS support
 ├── internal/
 │   ├── database/             # Database configuration
 │   │   └── database.go       # PostgreSQL connection and migrations
 │   ├── handlers/             # HTTP request handlers
 │   │   ├── lists.go          # List CRUD handlers
 │   │   └── todos.go          # Todo CRUD handlers
+│   ├── logging/              # Logging configuration
+│   │   └── logging.go        # Logrus + lumberjack setup
+│   ├── middleware/           # HTTP middleware
+│   │   ├── cors.go           # CORS middleware
+│   │   ├── helpers.go        # Shared utility functions
+│   │   ├── logging.go        # Request logging middleware
+│   │   ├── ratelimit.go      # Rate limiting middleware
+│   │   └── security.go       # Security middleware (XSS, size limits, etc.)
 │   ├── models/               # Data models and DTOs
 │   │   └── models.go         # GORM models with validation
-│   └── storage/              # Storage layer
-│       ├── interface.go      # Storage interface
-│       ├── storage.go        # In-memory implementation
-│       └── postgres.go       # PostgreSQL/GORM implementation
+│   ├── storage/              # Storage layer
+│   │   ├── interface.go      # Storage interface
+│   │   ├── storage.go        # In-memory implementation
+│   │   └── postgres.go       # PostgreSQL/GORM implementation
+│   └── tls/                  # TLS/HTTPS configuration
+│       ├── tls.go            # TLS config and certificate handling
+│       └── redirect.go       # HTTP to HTTPS redirect handler
+├── scripts/
+│   └── generate-certs.sh     # Self-signed certificate generator
 ├── Dockerfile                # Docker image definition
 ├── docker-compose.yml        # Docker Compose with PostgreSQL
 ├── .env.example              # Environment variables example
+├── .gitignore                # Git ignore (includes certs/)
+├── Makefile                  # Build and test targets
 ├── go.mod                    # Go module definition
+├── SECURITY.md               # Security documentation
+├── TESTING.md                # Testing documentation
 └── README.md                 # This file
 ```
 
@@ -308,6 +332,17 @@ The service can be configured using environment variables:
 - `CORS_EXPOSE_HEADERS`: Headers exposed to client
 - `CORS_ALLOW_CREDENTIALS`: Allow credentials like cookies (default: false)
 - `CORS_MAX_AGE`: Preflight cache duration in seconds (default: 3600)
+
+### TLS/HTTPS Configuration
+- `TLS_ENABLED`: Enable HTTPS (default: false)
+- `TLS_CERT_FILE`: Path to TLS certificate file (default: ./certs/server.crt)
+- `TLS_KEY_FILE`: Path to TLS private key file (default: ./certs/server.key)
+- `TLS_PORT`: HTTPS port (default: 8443, use 443 for production)
+- `HTTP_PORT`: HTTP port when TLS enabled (default: 8080)
+- `TLS_REDIRECT_HTTP`: Redirect HTTP to HTTPS (default: true)
+- `TLS_MIN_VERSION`: Minimum TLS version - 1.0, 1.1, 1.2, 1.3 (default: 1.2)
+- `TLS_MAX_VERSION`: Maximum TLS version (default: 1.3)
+- `TLS_PREFER_SERVER_CIPHERS`: Prefer server cipher suites (default: true)
 
 ## Development
 
@@ -513,6 +548,268 @@ LOG_FILE_ENABLED=false
 LOG_LEVEL=warn
 ```
 
+## HTTPS/TLS Support
+
+The API includes built-in HTTPS/TLS support for secure communication in production environments.
+
+### Features
+
+- **TLS 1.2 and 1.3**: Modern, secure TLS versions (1.0 and 1.1 are deprecated)
+- **Secure Cipher Suites**: Only strong, modern ciphers (AES-GCM, ChaCha20-Poly1305)
+- **HTTP to HTTPS Redirect**: Automatically redirect HTTP requests to HTTPS
+- **Flexible Configuration**: Environment-based configuration for different environments
+- **Graceful Shutdown**: Proper handling of in-flight requests during shutdown
+- **Certificate Validation**: Validates certificates on load
+
+### Quick Start with HTTPS
+
+#### 1. Generate Self-Signed Certificates (Development)
+
+For development and testing, use the provided script to generate self-signed certificates:
+
+```bash
+# Generate certificates for localhost
+./scripts/generate-certs.sh localhost
+
+# Or for a specific domain
+./scripts/generate-certs.sh example.com
+```
+
+This creates:
+- `certs/server.key` - Private key (2048-bit RSA)
+- `certs/server.crt` - Self-signed certificate (valid for 365 days)
+
+**Note**: Self-signed certificates will show browser warnings. For production, use certificates from a trusted CA like Let's Encrypt.
+
+#### 2. Enable HTTPS
+
+Set the following in your `.env` file:
+
+```bash
+# Enable TLS
+TLS_ENABLED=true
+
+# Certificate paths
+TLS_CERT_FILE=./certs/server.crt
+TLS_KEY_FILE=./certs/server.key
+
+# Ports
+TLS_PORT=8443          # HTTPS port (use 443 for production)
+HTTP_PORT=8080         # HTTP port (for redirect)
+
+# Redirect HTTP to HTTPS
+TLS_REDIRECT_HTTP=true
+```
+
+#### 3. Start the Server
+
+```bash
+# Build first
+go build -o todolist-api ./cmd/server
+
+# Run with HTTPS enabled
+./todolist-api
+```
+
+You'll see:
+```
+INFO  Starting HTTPS server on port 8443
+INFO  Starting HTTP redirect server on port 8080 -> HTTPS port 8443
+```
+
+#### 4. Test HTTPS Connection
+
+```bash
+# Using curl (accept self-signed cert)
+curl -k https://localhost:8443/health
+
+# Or specify the certificate
+curl --cacert certs/server.crt https://localhost:8443/health
+
+# HTTP will redirect to HTTPS
+curl -L http://localhost:8080/health
+```
+
+### Production Setup
+
+For production deployments, use proper certificates from a trusted Certificate Authority.
+
+#### Option 1: Let's Encrypt (Recommended)
+
+Use certbot or similar ACME client to obtain free certificates:
+
+```bash
+# Install certbot
+sudo apt-get install certbot
+
+# Obtain certificate
+sudo certbot certonly --standalone -d yourdomain.com
+
+# Certificates will be in /etc/letsencrypt/live/yourdomain.com/
+```
+
+Update `.env`:
+```bash
+TLS_ENABLED=true
+TLS_CERT_FILE=/etc/letsencrypt/live/yourdomain.com/fullchain.pem
+TLS_KEY_FILE=/etc/letsencrypt/live/yourdomain.com/privkey.pem
+TLS_PORT=443
+HTTP_PORT=80
+TLS_REDIRECT_HTTP=true
+```
+
+#### Option 2: Commercial Certificate
+
+If using a commercial CA (DigiCert, GlobalSign, etc.):
+
+1. Generate a CSR (Certificate Signing Request):
+```bash
+openssl req -new -newkey rsa:2048 -nodes \
+  -keyout server.key \
+  -out server.csr \
+  -subj "/C=US/ST=State/L=City/O=Organization/CN=yourdomain.com"
+```
+
+2. Submit `server.csr` to your CA
+3. Download the signed certificate
+4. Update `.env` with certificate paths
+
+#### Option 3: Reverse Proxy (Alternative)
+
+For complex deployments, use a reverse proxy like nginx or Caddy to handle TLS:
+
+**nginx example:**
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name yourdomain.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+In this case, disable TLS in the app:
+```bash
+TLS_ENABLED=false
+PORT=8080
+```
+
+### TLS Configuration Options
+
+#### TLS Versions
+
+**Recommended (Secure):**
+```bash
+TLS_MIN_VERSION=1.2  # TLS 1.2 minimum
+TLS_MAX_VERSION=1.3  # TLS 1.3 maximum
+```
+
+**Legacy Support (Not Recommended):**
+```bash
+TLS_MIN_VERSION=1.0  # Allows TLS 1.0/1.1 (insecure)
+```
+
+#### Cipher Suites
+
+The server uses only secure, modern cipher suites:
+
+**TLS 1.3 Ciphers:**
+- `TLS_AES_128_GCM_SHA256`
+- `TLS_AES_256_GCM_SHA384`
+- `TLS_CHACHA20_POLY1305_SHA256`
+
+**TLS 1.2 Ciphers:**
+- `TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256`
+- `TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384`
+- `TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256`
+- `TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384`
+- `TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256`
+- `TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256`
+
+Weak ciphers (RC4, DES, 3DES, MD5) are explicitly excluded.
+
+### Testing HTTPS
+
+#### Test TLS Configuration
+
+```bash
+# Check TLS version support
+openssl s_client -connect localhost:8443 -tls1_2
+
+# Check cipher suites
+nmap --script ssl-enum-ciphers -p 8443 localhost
+
+# Test certificate validity
+openssl s_client -connect localhost:8443 -showcerts
+```
+
+#### Test HTTP Redirect
+
+```bash
+# HTTP should redirect to HTTPS (301 Moved Permanently)
+curl -v http://localhost:8080/api/v1/lists
+
+# Expected output:
+# < HTTP/1.1 301 Moved Permanently
+# < Location: https://localhost:8443/api/v1/lists
+```
+
+#### Test with API Requests
+
+```bash
+# Create a list via HTTPS
+curl -k -X POST https://localhost:8443/api/v1/lists \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Secure Tasks", "description": "Tasks over HTTPS"}'
+
+# Get lists via HTTPS
+curl -k https://localhost:8443/api/v1/lists
+```
+
+### Troubleshooting
+
+**Certificate Not Found:**
+```
+Failed to create TLS config: open ./certs/server.crt: no such file or directory
+```
+→ Run `./scripts/generate-certs.sh` to create certificates
+
+**Permission Denied on Port 443:**
+```
+Failed to start HTTPS server: listen tcp :443: bind: permission denied
+```
+→ Ports below 1024 require root/sudo, or use port 8443 for development
+
+**Browser Shows Warning:**
+```
+Your connection is not private / NET::ERR_CERT_AUTHORITY_INVALID
+```
+→ This is expected with self-signed certificates. Click "Advanced" → "Proceed" for testing, or use proper CA certificates for production
+
+**HTTP Requests Timing Out:**
+```
+curl: (7) Failed to connect to localhost port 8080
+```
+→ Check that `TLS_REDIRECT_HTTP=true` and the server started both listeners
+
+### Security Best Practices
+
+1. ✅ **Use TLS 1.2+ only** - Disable TLS 1.0/1.1 (known vulnerabilities)
+2. ✅ **Use strong ciphers** - The default configuration only allows secure ciphers
+3. ✅ **Use proper CA certificates in production** - Never use self-signed certs for public services
+4. ✅ **Keep private keys secure** - Never commit `.key` files to version control (`.gitignore` already excludes them)
+5. ✅ **Renew certificates before expiry** - Set up auto-renewal with Let's Encrypt
+6. ✅ **Enable HTTP to HTTPS redirect** - Force all traffic through HTTPS
+7. ✅ **Use HSTS headers** - Already included in security headers middleware
+8. ✅ **Monitor certificate expiry** - Set up alerts for certificates expiring within 30 days
+
 ## Security
 
 The API implements multiple layers of security protection. See [SECURITY.md](SECURITY.md) for complete security documentation.
@@ -523,16 +820,22 @@ The API implements multiple layers of security protection. See [SECURITY.md](SEC
 ✅ **XSS Prevention** - HTML escaping of all user input
 ✅ **DoS Protection** - Rate limiting (60 req/min per IP)
 ✅ **Request Size Limits** - Maximum 1MB request body
-✅ **Security Headers** - X-Frame-Options, CSP, X-XSS-Protection, etc.
+✅ **Security Headers** - X-Frame-Options, CSP, X-XSS-Protection, HSTS, etc.
 ✅ **CORS Protection** - Configurable origin whitelist
 ✅ **UUID Validation** - Format validation before database queries
 ✅ **Error Sanitization** - Generic errors to clients, detailed logs server-side
 ✅ **Memory Safety** - Go's built-in bounds checking and GC
+✅ **HTTPS/TLS Support** - TLS 1.2/1.3 with secure cipher suites
 
 ### Security Configuration
 
 **Production Settings:**
 ```bash
+# Enable HTTPS
+TLS_ENABLED=true
+TLS_PORT=443
+TLS_REDIRECT_HTTP=true
+
 # Strict CORS - DO NOT use wildcard!
 CORS_ALLOWED_ORIGINS=https://yourdomain.com
 
@@ -557,15 +860,16 @@ RATE_LIMIT_ENABLED=false
 
 ⚠️ **Authentication** - No JWT/API key authentication (planned)
 ⚠️ **Authorization** - No user-level access control (planned)
-⚠️ **HTTPS Enforcement** - Should be deployed behind HTTPS proxy
 
 ### Security Best Practices
 
-1. **Always use HTTPS in production** - Deploy behind nginx/load balancer with SSL
-2. **Configure CORS strictly** - Never use `*` wildcard in production
-3. **Monitor rate limit logs** - Track suspicious IPs hitting limits
-4. **Keep dependencies updated** - Regularly update Go modules
-5. **Use strong database passwords** - Never use default credentials
+1. **Always use HTTPS in production** - Enable TLS or deploy behind nginx/load balancer with SSL
+2. **Use proper certificates** - Get certificates from Let's Encrypt or commercial CA (never use self-signed in production)
+3. **Configure CORS strictly** - Never use `*` wildcard in production
+4. **Monitor rate limit logs** - Track suspicious IPs hitting limits
+5. **Keep dependencies updated** - Regularly update Go modules
+6. **Use strong database passwords** - Never use default credentials
+7. **Protect private keys** - Never commit `.key` files to version control
 
 See [SECURITY.md](SECURITY.md) for detailed security information, testing procedures, and deployment checklist.
 
@@ -576,12 +880,13 @@ See [SECURITY.md](SECURITY.md) for detailed security information, testing proced
 - ✅ ~~Add rate limiting~~ - **COMPLETED**
 - ✅ ~~Add request logging~~ - **COMPLETED**
 - ✅ ~~Add security hardening (XSS, CORS, headers, size limits)~~ - **COMPLETED**
+- ✅ ~~Add HTTPS/TLS support~~ - **COMPLETED**
 - Add JWT authentication and authorization
 - Add metrics and monitoring (Prometheus)
 - Add API documentation UI (Swagger/ReDoc)
 - Add database connection pooling tuning
 - Add health check with database connectivity status
-- Add HTTPS/TLS support
+- Add Let's Encrypt ACME support for automatic certificate management
 
 ## License
 

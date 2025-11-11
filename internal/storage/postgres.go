@@ -20,10 +20,10 @@ func NewPostgresStorage(db *gorm.DB) *PostgresStorage {
 }
 
 // CreateList creates a new todo list
-func (s *PostgresStorage) CreateList(req models.CreateTodoListRequest) (*models.TodoList, error) {
-	// Check if list with same name exists
+func (s *PostgresStorage) CreateList(userID uuid.UUID, req models.CreateTodoListRequest) (*models.TodoList, error) {
+	// Check if list with same name exists for this user
 	var existing models.TodoList
-	result := s.db.Where("name = ?", req.Name).First(&existing)
+	result := s.db.Where("user_id = ? AND name = ?", userID, req.Name).First(&existing)
 	if result.Error == nil {
 		return nil, ErrListNameExists
 	}
@@ -32,6 +32,7 @@ func (s *PostgresStorage) CreateList(req models.CreateTodoListRequest) (*models.
 	}
 
 	list := &models.TodoList{
+		UserID:      userID,
 		Name:        req.Name,
 		Description: req.Description,
 	}
@@ -44,13 +45,13 @@ func (s *PostgresStorage) CreateList(req models.CreateTodoListRequest) (*models.
 	return list, nil
 }
 
-// GetAllLists retrieves all todo lists with pagination
-func (s *PostgresStorage) GetAllLists(page, limit int) ([]models.TodoList, *models.Pagination, error) {
+// GetAllLists retrieves all todo lists with pagination for a specific user
+func (s *PostgresStorage) GetAllLists(userID uuid.UUID, page, limit int) ([]models.TodoList, *models.Pagination, error) {
 	var lists []models.TodoList
 	var totalItems int64
 
-	// Count total items
-	if err := s.db.Model(&models.TodoList{}).Count(&totalItems).Error; err != nil {
+	// Count total items for this user
+	if err := s.db.Model(&models.TodoList{}).Where("user_id = ?", userID).Count(&totalItems).Error; err != nil {
 		return nil, nil, err
 	}
 
@@ -58,8 +59,9 @@ func (s *PostgresStorage) GetAllLists(page, limit int) ([]models.TodoList, *mode
 	offset := (page - 1) * limit
 	totalPages := int((totalItems + int64(limit) - 1) / int64(limit))
 
-	// Fetch paginated lists
-	if err := s.db.Order("created_at DESC").
+	// Fetch paginated lists for this user
+	if err := s.db.Where("user_id = ?", userID).
+		Order("created_at DESC").
 		Offset(offset).
 		Limit(limit).
 		Find(&lists).Error; err != nil {
@@ -83,10 +85,10 @@ func (s *PostgresStorage) GetAllLists(page, limit int) ([]models.TodoList, *mode
 	return lists, pagination, nil
 }
 
-// GetListByID retrieves a todo list by ID
-func (s *PostgresStorage) GetListByID(id uuid.UUID) (*models.TodoList, error) {
+// GetListByID retrieves a todo list by ID for a specific user
+func (s *PostgresStorage) GetListByID(userID, listID uuid.UUID) (*models.TodoList, error) {
 	var list models.TodoList
-	if err := s.db.First(&list, "id = ?", id).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", listID, userID).First(&list).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrListNotFound
 		}
@@ -101,20 +103,20 @@ func (s *PostgresStorage) GetListByID(id uuid.UUID) (*models.TodoList, error) {
 	return &list, nil
 }
 
-// UpdateList updates an existing todo list
-func (s *PostgresStorage) UpdateList(id uuid.UUID, req models.UpdateTodoListRequest) (*models.TodoList, error) {
+// UpdateList updates an existing todo list for a specific user
+func (s *PostgresStorage) UpdateList(userID, listID uuid.UUID, req models.UpdateTodoListRequest) (*models.TodoList, error) {
 	var list models.TodoList
-	if err := s.db.First(&list, "id = ?", id).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", listID, userID).First(&list).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrListNotFound
 		}
 		return nil, err
 	}
 
-	// Check if new name conflicts with existing list
+	// Check if new name conflicts with existing list for this user
 	if req.Name != nil && *req.Name != list.Name {
 		var existing models.TodoList
-		result := s.db.Where("name = ? AND id != ?", *req.Name, id).First(&existing)
+		result := s.db.Where("user_id = ? AND name = ? AND id != ?", userID, *req.Name, listID).First(&existing)
 		if result.Error == nil {
 			return nil, ErrListNameExists
 		}
@@ -140,9 +142,9 @@ func (s *PostgresStorage) UpdateList(id uuid.UUID, req models.UpdateTodoListRequ
 	return &list, nil
 }
 
-// DeleteList deletes a todo list and all its todos
-func (s *PostgresStorage) DeleteList(id uuid.UUID) error {
-	result := s.db.Delete(&models.TodoList{}, "id = ?", id)
+// DeleteList deletes a todo list and all its todos for a specific user
+func (s *PostgresStorage) DeleteList(userID, listID uuid.UUID) error {
+	result := s.db.Where("id = ? AND user_id = ?", listID, userID).Delete(&models.TodoList{})
 	if result.Error != nil {
 		return result.Error
 	}
@@ -152,11 +154,11 @@ func (s *PostgresStorage) DeleteList(id uuid.UUID) error {
 	return nil
 }
 
-// CreateTodo creates a new todo in a list
-func (s *PostgresStorage) CreateTodo(listID uuid.UUID, req models.CreateTodoRequest) (*models.Todo, error) {
-	// Check if list exists
+// CreateTodo creates a new todo in a list owned by a specific user
+func (s *PostgresStorage) CreateTodo(userID, listID uuid.UUID, req models.CreateTodoRequest) (*models.Todo, error) {
+	// Check if list exists and belongs to user
 	var list models.TodoList
-	if err := s.db.First(&list, "id = ?", listID).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", listID, userID).First(&list).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrListNotFound
 		}
@@ -178,11 +180,11 @@ func (s *PostgresStorage) CreateTodo(listID uuid.UUID, req models.CreateTodoRequ
 	return todo, nil
 }
 
-// GetTodosByList retrieves all todos in a list with filtering and sorting
-func (s *PostgresStorage) GetTodosByList(listID uuid.UUID, priority *models.Priority, completed *bool, sortBy, sortOrder string) ([]models.Todo, error) {
-	// Check if list exists
+// GetTodosByList retrieves all todos in a list owned by a specific user with filtering and sorting
+func (s *PostgresStorage) GetTodosByList(userID, listID uuid.UUID, priority *models.Priority, completed *bool, sortBy, sortOrder string) ([]models.Todo, error) {
+	// Check if list exists and belongs to user
 	var list models.TodoList
-	if err := s.db.First(&list, "id = ?", listID).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", listID, userID).First(&list).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrListNotFound
 		}
@@ -212,11 +214,11 @@ func (s *PostgresStorage) GetTodosByList(listID uuid.UUID, priority *models.Prio
 	return todos, nil
 }
 
-// GetTodoByID retrieves a specific todo
-func (s *PostgresStorage) GetTodoByID(listID, todoID uuid.UUID) (*models.Todo, error) {
-	// Check if list exists
+// GetTodoByID retrieves a specific todo from a list owned by a specific user
+func (s *PostgresStorage) GetTodoByID(userID, listID, todoID uuid.UUID) (*models.Todo, error) {
+	// Check if list exists and belongs to user
 	var list models.TodoList
-	if err := s.db.First(&list, "id = ?", listID).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", listID, userID).First(&list).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrListNotFound
 		}
@@ -234,11 +236,11 @@ func (s *PostgresStorage) GetTodoByID(listID, todoID uuid.UUID) (*models.Todo, e
 	return &todo, nil
 }
 
-// UpdateTodo updates an existing todo
-func (s *PostgresStorage) UpdateTodo(listID, todoID uuid.UUID, req models.UpdateTodoRequest) (*models.Todo, error) {
-	// Check if list exists
+// UpdateTodo updates an existing todo in a list owned by a specific user
+func (s *PostgresStorage) UpdateTodo(userID, listID, todoID uuid.UUID, req models.UpdateTodoRequest) (*models.Todo, error) {
+	// Check if list exists and belongs to user
 	var list models.TodoList
-	if err := s.db.First(&list, "id = ?", listID).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", listID, userID).First(&list).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrListNotFound
 		}
@@ -283,11 +285,11 @@ func (s *PostgresStorage) UpdateTodo(listID, todoID uuid.UUID, req models.Update
 	return &todo, nil
 }
 
-// DeleteTodo deletes a todo
-func (s *PostgresStorage) DeleteTodo(listID, todoID uuid.UUID) error {
-	// Check if list exists
+// DeleteTodo deletes a todo from a list owned by a specific user
+func (s *PostgresStorage) DeleteTodo(userID, listID, todoID uuid.UUID) error {
+	// Check if list exists and belongs to user
 	var list models.TodoList
-	if err := s.db.First(&list, "id = ?", listID).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", listID, userID).First(&list).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrListNotFound
 		}
