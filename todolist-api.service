@@ -1,0 +1,41 @@
+[Unit]
+Description=TodoList API Server
+Documentation=https://github.com/yourusername/todolist-api
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=todolist
+Group=todolist
+WorkingDirectory=/opt/todolist-api
+
+# Environment file (contains DB credentials, JWT secrets, etc.)
+EnvironmentFile=/opt/todolist-api/.env
+
+# Start the application
+ExecStart=/opt/todolist-api/todolist-api
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+
+# Resource limits
+LimitNOFILE=65536
+MemoryLimit=512M
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/todolist-api/logs
+ReadOnlyPaths=/opt/todolist-api
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=todolist-api
+
+[Install]
+WantedBy=multi-user.target

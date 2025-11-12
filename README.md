@@ -419,11 +419,35 @@ curl -X DELETE http://localhost:8080/api/v1/lists/{listId}/todos/{todoId} \
 
 The application uses **PostgreSQL** with **GORM** for persistent storage:
 
-- **Auto-migrations**: Database schema is automatically created/updated on startup
+- **Database Migrations**: Versioned schema management using golang-migrate (see [MIGRATIONS.md](MIGRATIONS.md))
 - **Soft deletes**: Deleted records are marked as deleted (not physically removed)
 - **Foreign keys**: Todos are linked to lists with cascade delete
 - **Indexes**: Optimized queries with indexes on commonly searched fields
 - **UUID primary keys**: Uses UUIDs for all entity IDs
+
+### Database Migrations
+
+This project uses [golang-migrate](https://github.com/golang-migrate/migrate) for database schema versioning. Migrations ensure your database schema is tracked, versioned, and can be reliably applied across environments.
+
+**Quick Start:**
+
+```bash
+# Apply all pending migrations
+make migrate-up
+
+# Check current version
+make migrate-version
+
+# Rollback last migration
+make migrate-down
+
+# Create new migration
+make migrate-create NAME=add_feature
+```
+
+For detailed migration documentation, see [MIGRATIONS.md](MIGRATIONS.md).
+
+For cloud VM deployment guide, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ### Database Schema
 

@@ -5,7 +5,10 @@
       "Bash(go test:*)",
       "Bash(go get:*)",
       "Bash(~/go/bin/swag init:*)",
-      "Bash(go install:*)"
+      "Bash(go install:*)",
+      "Bash(mkdir:*)",
+      "Bash(chmod:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []
