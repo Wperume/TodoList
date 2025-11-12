@@ -18,10 +18,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	// swaggerFiles "github.com/swaggo/files"
-	// ginSwagger "github.com/swaggo/gin-swagger"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 
-	// _ "todolist-api/docs" // Import generated docs - commented out until docs are generated
+	_ "todolist-api/docs" // Import generated docs
 )
 
 // @title           TodoList API
@@ -205,8 +205,19 @@ func main() {
 		})
 	}
 
-	// Swagger documentation endpoint - commented out until docs are generated
-	// router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Swagger documentation endpoint (requires authentication)
+	// Only authenticated users can view API documentation
+	if jwtConfig != nil {
+		swagger := router.Group("/swagger")
+		swagger.Use(middleware.AuthMiddleware(jwtConfig))
+		{
+			swagger.GET("/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		}
+	} else {
+		// Fallback for in-memory mode (no auth available)
+		// In production with database, this branch won't execute
+		router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	}
 
 	// Check if TLS is enabled
 	tlsConf := tlsconfig.NewTLSConfigFromEnv()

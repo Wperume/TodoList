@@ -84,7 +84,7 @@ Before you begin, ensure you have the following installed on your system:
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| **Go** | 1.23+ | Build and run the application |
+| **Go** | 1.25.3+ | Build and run the application |
 | **Git** | 2.0+ | Clone the repository |
 
 #### Optional (Choose based on your setup)
@@ -219,9 +219,9 @@ go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 #### Install Go
 ```bash
 # Download and install
-wget https://go.dev/dl/go1.24.0.linux-amd64.tar.gz
+wget https://go.dev/dl/go1.25.3.linux-amd64.tar.gz
 sudo rm -rf /usr/local/go
-sudo tar -C /usr/local -xzf go1.24.0.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.25.3.linux-amd64.tar.gz
 
 # Add to PATH (add to ~/.bashrc or ~/.zshrc)
 export PATH=$PATH:/usr/local/go/bin
@@ -284,9 +284,9 @@ go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 #### Install Go
 ```bash
 # Download and install
-wget https://go.dev/dl/go1.24.0.linux-amd64.tar.gz
+wget https://go.dev/dl/go1.25.3.linux-amd64.tar.gz
 sudo rm -rf /usr/local/go
-sudo tar -C /usr/local -xzf go1.24.0.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.25.3.linux-amd64.tar.gz
 
 # Add to PATH (add to ~/.bashrc or ~/.zshrc)
 export PATH=$PATH:/usr/local/go/bin
@@ -344,7 +344,7 @@ After installing the required tools, verify everything is set up correctly:
 ```bash
 # Check Go installation
 go version
-# Expected: go version go1.23.0 or later
+# Expected: go version go1.25.3 or later
 
 # Check Git installation
 git --version

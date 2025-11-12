@@ -14,7 +14,12 @@
       "Bash(docker compose:*)",
       "Bash(python3:*)",
       "Bash(go run:*)",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(go mod tidy:*)",
+      "Bash(go version:*)",
+      "Bash(./todolist-api:*)",
+      "Bash(cat:*)",
+      "Bash(pkill:*)"
     ],
     "deny": [],
     "ask": []

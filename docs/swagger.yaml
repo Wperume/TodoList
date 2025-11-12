@@ -1,0 +1,425 @@
+basePath: /api/v1
+definitions:
+  internal_handlers.HealthCheck:
+    properties:
+      details:
+        additionalProperties: true
+        type: object
+      message:
+        type: string
+      status:
+        type: string
+    type: object
+  internal_handlers.HealthResponse:
+    properties:
+      checks:
+        additionalProperties:
+          $ref: '#/definitions/internal_handlers.HealthCheck'
+        type: object
+      status:
+        type: string
+      timestamp:
+        type: string
+      uptime:
+        type: string
+      version:
+        type: string
+    type: object
+  todolist-api_internal_models.AuthResponse:
+    properties:
+      accessToken:
+        type: string
+      expiresIn:
+        description: Access token expiry in seconds
+        type: integer
+      refreshToken:
+        type: string
+      tokenType:
+        description: Always "Bearer"
+        type: string
+      user:
+        $ref: '#/definitions/todolist-api_internal_models.UserInfo'
+    type: object
+  todolist-api_internal_models.ChangePasswordRequest:
+    properties:
+      currentPassword:
+        type: string
+      newPassword:
+        maxLength: 72
+        minLength: 8
+        type: string
+    required:
+    - currentPassword
+    - newPassword
+    type: object
+  todolist-api_internal_models.ErrorResponse:
+    properties:
+      code:
+        type: string
+      details:
+        additionalProperties: true
+        type: object
+      message:
+        type: string
+    type: object
+  todolist-api_internal_models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  todolist-api_internal_models.RefreshTokenRequest:
+    properties:
+      refreshToken:
+        type: string
+    required:
+    - refreshToken
+    type: object
+  todolist-api_internal_models.RegisterRequest:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      firstName:
+        maxLength: 100
+        type: string
+      lastName:
+        maxLength: 100
+        type: string
+      password:
+        description: bcrypt max is 72 bytes
+        maxLength: 72
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  todolist-api_internal_models.UpdateProfileRequest:
+    properties:
+      firstName:
+        maxLength: 100
+        type: string
+      lastName:
+        maxLength: 100
+        type: string
+    type: object
+  todolist-api_internal_models.UserInfo:
+    properties:
+      email:
+        type: string
+      firstName:
+        type: string
+      id:
+        type: string
+      lastName:
+        type: string
+      role:
+        $ref: '#/definitions/todolist-api_internal_models.UserRole'
+    type: object
+  todolist-api_internal_models.UserRole:
+    enum:
+    - user
+    - admin
+    type: string
+    x-enum-varnames:
+    - RoleUser
+    - RoleAdmin
+host: localhost:8080
+info:
+  contact:
+    email: support@todolist-api.com
+    name: API Support
+  description: A RESTful API for managing todo lists and tasks with user authentication
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: TodoList API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return JWT tokens
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/todolist-api_internal_models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+      summary: Login
+      tags:
+      - Authentication
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Revoke the current refresh token
+      parameters:
+      - description: Refresh token to revoke
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/todolist-api_internal_models.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+      summary: Logout
+      tags:
+      - Authentication
+  /auth/password:
+    put:
+      consumes:
+      - application/json
+      description: Change the authenticated user's password
+      parameters:
+      - description: Password change details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/todolist-api_internal_models.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Change password
+      tags:
+      - User
+  /auth/profile:
+    get:
+      description: Get the authenticated user's profile information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.UserInfo'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get user profile
+      tags:
+      - User
+    put:
+      consumes:
+      - application/json
+      description: Update the authenticated user's profile information
+      parameters:
+      - description: Profile updates
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/todolist-api_internal_models.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.UserInfo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - User
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Get a new access token using a refresh token
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/todolist-api_internal_models.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+      summary: Refresh access token
+      tags:
+      - Authentication
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: Registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/todolist-api_internal_models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - Authentication
+  /health:
+    get:
+      description: Returns a simple health status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Basic health check
+      tags:
+      - Health
+  /health/detailed:
+    get:
+      description: Returns detailed health status including database connectivity,
+        uptime, and system info
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_handlers.HealthResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/internal_handlers.HealthResponse'
+      summary: Detailed health check
+      tags:
+      - Health
+  /health/live:
+    get:
+      description: Kubernetes-style liveness probe - checks if app is running
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Liveness probe
+      tags:
+      - Health
+  /health/ready:
+    get:
+      description: Kubernetes-style readiness probe - checks if app can handle requests
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Service Unavailable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Readiness probe
+      tags:
+      - Health
+securityDefinitions:
+  Bearer:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
+tags:
+- description: User registration, login, and profile management
+  name: Authentication
+- description: Todo list management operations
+  name: Lists
+- description: Todo item management operations within lists
+  name: Todos
