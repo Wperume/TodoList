@@ -1,5 +1,9 @@
 # Todo List REST API
 
+[![CI/CD Pipeline](https://github.com/pulsifer/TodoList/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/pulsifer/TodoList/actions/workflows/ci-cd.yml)
+[![Go Version](https://img.shields.io/badge/Go-1.24-blue.svg)](https://golang.org)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
 A REST API service for managing multiple named todo lists with full CRUD operations, built with Go, Gin, and PostgreSQL.
 
 ## Features
@@ -20,6 +24,9 @@ A REST API service for managing multiple named todo lists with full CRUD operati
 - **Comprehensive Logging**: Structured logging with automatic log rotation and configurable retention
 - **Security Hardened**: XSS protection, CORS, security headers, request size limits, UUID validation, bcrypt password hashing
 - **HTTPS/TLS Support**: Secure communication with TLS 1.2/1.3, configurable cipher suites, and HTTP-to-HTTPS redirect
+- **Health Checks**: Comprehensive health endpoints with database connectivity, migration status, and system metrics
+- **Graceful Shutdown**: Clean shutdown with proper resource cleanup and in-flight request completion
+- **CI/CD Pipeline**: Automated testing, building, security scanning, and deployment to Oracle Cloud Infrastructure
 
 ## API Specification
 
