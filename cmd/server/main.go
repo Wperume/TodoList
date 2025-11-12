@@ -17,6 +17,7 @@ import (
 	tlsconfig "todolist-api/internal/tls"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	// swaggerFiles "github.com/swaggo/files"
 	// ginSwagger "github.com/swaggo/gin-swagger"
 
@@ -68,7 +69,9 @@ func main() {
 	var listHandler *handlers.ListHandler
 	var todoHandler *handlers.TodoHandler
 	var authHandler *handlers.AuthHandler
+	var healthHandler *handlers.HealthHandler
 	var jwtConfig *auth.JWTConfig
+	var db *gorm.DB
 
 	if useInMemory {
 		logging.Logger.Info("Using in-memory storage")
@@ -79,7 +82,8 @@ func main() {
 	} else {
 		// Initialize PostgreSQL connection
 		dbConfig := database.NewConfigFromEnv()
-		db, err := database.Connect(dbConfig)
+		var err error
+		db, err = database.Connect(dbConfig)
 		if err != nil {
 			logging.Logger.Fatalf("Failed to connect to database: %v", err)
 		}
@@ -102,6 +106,9 @@ func main() {
 		store := storage.NewPostgresStorage(db)
 		listHandler = handlers.NewListHandler(store)
 		todoHandler = handlers.NewTodoHandler(store)
+
+		// Initialize health handler with database connection
+		healthHandler = handlers.NewHealthHandler(db)
 	}
 
 	// Set up Gin router (without default logger since we'll use our own)
@@ -183,12 +190,20 @@ func main() {
 		}
 	}
 
-	// Health check endpoint
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "healthy",
+	// Health check endpoints
+	if healthHandler != nil {
+		router.GET("/health", healthHandler.BasicHealth)
+		router.GET("/health/detailed", healthHandler.DetailedHealth)
+		router.GET("/health/ready", healthHandler.ReadinessProbe)
+		router.GET("/health/live", healthHandler.LivenessProbe)
+	} else {
+		// Fallback for in-memory mode
+		router.GET("/health", func(c *gin.Context) {
+			c.JSON(200, gin.H{
+				"status": "healthy",
+			})
 		})
-	})
+	}
 
 	// Swagger documentation endpoint - commented out until docs are generated
 	// router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -198,15 +213,15 @@ func main() {
 
 	if tlsConf.Enabled {
 		// Run with HTTPS
-		startHTTPSServer(router, tlsConf, port)
+		startHTTPSServer(router, tlsConf, port, db)
 	} else {
 		// Run with HTTP only
-		startHTTPServer(router, port)
+		startHTTPServer(router, port, db)
 	}
 }
 
 // startHTTPServer starts an HTTP-only server
-func startHTTPServer(router *gin.Engine, port string) {
+func startHTTPServer(router *gin.Engine, port string, db *gorm.DB) {
 	srv := &http.Server{
 		Addr:           ":" + port,
 		Handler:        router,
@@ -224,11 +239,11 @@ func startHTTPServer(router *gin.Engine, port string) {
 	}()
 
 	// Wait for interrupt signal to gracefully shutdown
-	waitForShutdown(srv)
+	waitForShutdown(db, srv)
 }
 
 // startHTTPSServer starts an HTTPS server with optional HTTP redirect
-func startHTTPSServer(router *gin.Engine, tlsConf *tlsconfig.TLSConfig, httpPort string) {
+func startHTTPSServer(router *gin.Engine, tlsConf *tlsconfig.TLSConfig, httpPort string, db *gorm.DB) {
 	// Create TLS config
 	tlsConfig, err := tlsConf.CreateTLSConfig()
 	if err != nil {
@@ -273,11 +288,11 @@ func startHTTPSServer(router *gin.Engine, tlsConf *tlsconfig.TLSConfig, httpPort
 	}
 
 	// Wait for interrupt signal to gracefully shutdown both servers
-	waitForShutdown(httpsSrv, httpSrv)
+	waitForShutdown(db, httpsSrv, httpSrv)
 }
 
 // waitForShutdown waits for interrupt signal and gracefully shuts down servers
-func waitForShutdown(servers ...*http.Server) {
+func waitForShutdown(db *gorm.DB, servers ...*http.Server) {
 	// Setup signal catching
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
@@ -294,6 +309,19 @@ func waitForShutdown(servers ...*http.Server) {
 		if srv != nil {
 			if err := srv.Shutdown(ctx); err != nil {
 				logging.Logger.Errorf("Server shutdown error: %v", err)
+			}
+		}
+	}
+
+	// Close database connection if it exists
+	if db != nil {
+		logging.Logger.Info("Closing database connection...")
+		sqlDB, err := db.DB()
+		if err == nil {
+			if err := sqlDB.Close(); err != nil {
+				logging.Logger.Errorf("Database close error: %v", err)
+			} else {
+				logging.Logger.Info("Database connection closed")
 			}
 		}
 	}
