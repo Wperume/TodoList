@@ -93,8 +93,10 @@ func main() {
 	// Add error sanitization (catches panics and sanitizes errors)
 	router.Use(middleware.ErrorSanitizer())
 
-	// Initialize rate limiting
+	// Initialize rate limiting configuration
 	rateLimitConfig := middleware.NewRateLimitConfigFromEnv()
+
+	// Add global rate limiter as a fallback (applies to all routes)
 	router.Use(middleware.GlobalRateLimiter(rateLimitConfig))
 
 	// API version 1 routes
@@ -103,6 +105,8 @@ func main() {
 		// Authentication routes (public - no auth required)
 		if authHandler != nil {
 			auth := v1.Group("/auth")
+			// Apply stricter rate limiting to auth endpoints to prevent brute-force
+			auth.Use(middleware.PerUserAuthRateLimiter(rateLimitConfig))
 			{
 				auth.POST("/register", authHandler.Register)
 				auth.POST("/login", authHandler.Login)
@@ -110,9 +114,15 @@ func main() {
 				auth.POST("/logout", authHandler.Logout)
 
 				// Protected auth routes (require authentication)
-				auth.GET("/profile", middleware.AuthMiddleware(jwtConfig), authHandler.GetProfile)
-				auth.PUT("/profile", middleware.AuthMiddleware(jwtConfig), authHandler.UpdateProfile)
-				auth.PUT("/password", middleware.AuthMiddleware(jwtConfig), authHandler.ChangePassword)
+				// These use per-user rate limiting after auth middleware sets user_id
+				protected := auth.Group("")
+				protected.Use(middleware.AuthMiddleware(jwtConfig))
+				protected.Use(middleware.PerUserRateLimiter(rateLimitConfig))
+				{
+					protected.GET("/profile", authHandler.GetProfile)
+					protected.PUT("/profile", authHandler.UpdateProfile)
+					protected.PUT("/password", authHandler.ChangePassword)
+				}
 			}
 		}
 
@@ -120,6 +130,8 @@ func main() {
 		lists := v1.Group("/lists")
 		if jwtConfig != nil {
 			lists.Use(middleware.AuthMiddleware(jwtConfig))
+			// Apply per-user rate limiting after auth (user_id is set in context)
+			lists.Use(middleware.PerUserRateLimiter(rateLimitConfig))
 		}
 		{
 			lists.GET("", listHandler.GetAllLists)

@@ -158,3 +158,124 @@ func WriteRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 
 	return middleware
 }
+
+// PerUserRateLimiter creates a rate limiter that tracks limits per user
+// Unauthenticated requests fall back to IP-based rate limiting
+func PerUserRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
+	if !config.Enabled {
+		logging.Logger.Info("Per-user rate limiting is disabled")
+		return func(c *gin.Context) {
+			c.Next()
+		}
+	}
+
+	// Per-user rate limit
+	rate := limiter.Rate{
+		Period: 1 * time.Minute,
+		Limit:  config.RequestsPerMin,
+	}
+
+	// Create in-memory store
+	store := memory.NewStore()
+
+	// Create limiter instance
+	instance := limiter.New(store, rate)
+
+	// Custom key generator function
+	keyGetter := func(c *gin.Context) string {
+		// Try to get user ID from context (set by auth middleware)
+		if userIDValue, exists := c.Get("user_id"); exists {
+			return "user:" + userIDValue.(string)
+		}
+
+		// Fall back to IP-based limiting for unauthenticated requests
+		return "ip:" + c.ClientIP()
+	}
+
+	// Create middleware with custom error handler and key generator
+	middleware := mgin.NewMiddleware(instance,
+		mgin.WithKeyGetter(keyGetter),
+		mgin.WithLimitReachedHandler(func(c *gin.Context) {
+			// Determine if this is a user or IP-based limit
+			limitType := "ip"
+			identifier := c.ClientIP()
+
+			if userIDValue, exists := c.Get("user_id"); exists {
+				limitType = "user"
+				identifier = userIDValue.(string)
+			}
+
+			// Log rate limit violation
+			logging.Logger.WithFields(map[string]interface{}{
+				"limit_type":      limitType,
+				"identifier":      identifier,
+				"client_ip":       c.ClientIP(),
+				"path":            c.Request.URL.Path,
+				"method":          c.Request.Method,
+				"rate_limited":    true,
+				"limit_per_min":   config.RequestsPerMin,
+			}).Warn("Per-user rate limit exceeded")
+
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"code":       "RATE_LIMIT_EXCEEDED",
+				"message":    "Too many requests from this account. Please try again later.",
+				"retryAfter": int(rate.Period.Seconds()),
+				"limit":      rate.Limit,
+			})
+			c.Abort()
+		}))
+
+	logging.Logger.Infof("Per-user rate limiting enabled: %d requests per minute", config.RequestsPerMin)
+	return middleware
+}
+
+// PerUserAuthRateLimiter creates a stricter rate limiter for authentication endpoints
+// to prevent brute-force attacks
+func PerUserAuthRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
+	if !config.Enabled {
+		return func(c *gin.Context) {
+			c.Next()
+		}
+	}
+
+	// Stricter limits for auth endpoints
+	rate := limiter.Rate{
+		Period: 15 * time.Minute,
+		Limit:  5, // Only 5 attempts per 15 minutes
+	}
+
+	store := memory.NewStore()
+	instance := limiter.New(store, rate)
+
+	// Custom key generator - use IP for auth endpoints since we can't reliably parse body
+	keyGetter := func(c *gin.Context) string {
+		// Use IP for authentication rate limiting
+		// This prevents brute-force attacks from a single IP
+		return "auth:ip:" + c.ClientIP()
+	}
+
+	middleware := mgin.NewMiddleware(instance,
+		mgin.WithKeyGetter(keyGetter),
+		mgin.WithLimitReachedHandler(func(c *gin.Context) {
+			logging.Logger.WithFields(map[string]interface{}{
+				"client_ip":       c.ClientIP(),
+				"path":            c.Request.URL.Path,
+				"method":          c.Request.Method,
+				"rate_limited":    true,
+				"limit_type":      "auth",
+				"limit":           rate.Limit,
+				"period_minutes":  int(rate.Period.Minutes()),
+			}).Warn("Authentication rate limit exceeded")
+
+			c.JSON(http.StatusTooManyRequests, gin.H{
+				"code":       "AUTH_RATE_LIMIT_EXCEEDED",
+				"message":    "Too many authentication attempts. Please try again later.",
+				"retryAfter": int(rate.Period.Seconds()),
+				"limit":      rate.Limit,
+			})
+			c.Abort()
+		}))
+
+	logging.Logger.Infof("Auth rate limiting enabled: %d attempts per 15 minutes", rate.Limit)
+	return middleware
+}
