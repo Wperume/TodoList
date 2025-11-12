@@ -68,6 +68,18 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 	)`).Error
 	require.NoError(t, err, "Failed to create todos table")
 
+	err = db.Exec(`CREATE TABLE IF NOT EXISTS refresh_tokens (
+		id TEXT PRIMARY KEY,
+		user_id TEXT NOT NULL,
+		token TEXT NOT NULL UNIQUE,
+		expires_at DATETIME NOT NULL,
+		created_at DATETIME,
+		revoked_at DATETIME,
+		deleted_at DATETIME,
+		FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+	)`).Error
+	require.NoError(t, err, "Failed to create refresh_tokens table")
+
 	// Create indexes
 	db.Exec(`CREATE INDEX idx_users_deleted_at ON users(deleted_at)`)
 	db.Exec(`CREATE INDEX idx_users_is_active ON users(is_active)`)
@@ -77,6 +89,11 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 	db.Exec(`CREATE INDEX idx_todos_list_id ON todos(list_id)`)
 	db.Exec(`CREATE INDEX idx_todos_completed ON todos(completed)`)
 	db.Exec(`CREATE INDEX idx_todos_deleted_at ON todos(deleted_at)`)
+	db.Exec(`CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id)`)
+	db.Exec(`CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token)`)
+	db.Exec(`CREATE INDEX idx_refresh_tokens_expires_at ON refresh_tokens(expires_at)`)
+	db.Exec(`CREATE INDEX idx_refresh_tokens_revoked_at ON refresh_tokens(revoked_at)`)
+	db.Exec(`CREATE INDEX idx_refresh_tokens_deleted_at ON refresh_tokens(deleted_at)`)
 
 	// Insert test user (used by postgres_test.go)
 	err = db.Exec(`INSERT INTO users (id, email, password_hash, role, is_active, created_at, updated_at)

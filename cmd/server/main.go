@@ -17,7 +17,39 @@ import (
 	tlsconfig "todolist-api/internal/tls"
 
 	"github.com/gin-gonic/gin"
+	// swaggerFiles "github.com/swaggo/files"
+	// ginSwagger "github.com/swaggo/gin-swagger"
+
+	// _ "todolist-api/docs" // Import generated docs - commented out until docs are generated
 )
+
+// @title           TodoList API
+// @version         1.0
+// @description     A RESTful API for managing todo lists and tasks with user authentication
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.email  support@todolist-api.com
+
+// @license.name  MIT
+// @license.url   https://opensource.org/licenses/MIT
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @securityDefinitions.apikey Bearer
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
+
+// @tag.name Authentication
+// @tag.description User registration, login, and profile management
+
+// @tag.name Lists
+// @tag.description Todo list management operations
+
+// @tag.name Todos
+// @tag.description Todo item management operations within lists
 
 func main() {
 	// Initialize logging first
@@ -157,6 +189,9 @@ func main() {
 			"status": "healthy",
 		})
 	})
+
+	// Swagger documentation endpoint - commented out until docs are generated
+	// router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Check if TLS is enabled
 	tlsConf := tlsconfig.NewTLSConfigFromEnv()
