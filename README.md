@@ -74,13 +74,323 @@ https://localhost:8443/api/v1
 #### Health Check
 - `GET /health` - Health check endpoint
 
-## Quick Start
+## Getting Started
 
 ### Prerequisites
 
-- Go 1.23 or later (for local development)
-- PostgreSQL 14+ (for local development without Docker)
-- Docker and Docker Compose (for containerized deployment)
+Before you begin, ensure you have the following installed on your system:
+
+#### Required
+
+| Tool | Version | Purpose |
+|------|---------|---------|
+| **Go** | 1.23+ | Build and run the application |
+| **Git** | 2.0+ | Clone the repository |
+
+#### Optional (Choose based on your setup)
+
+| Tool | Version | Purpose | When Required |
+|------|---------|---------|---------------|
+| **Docker** | 20.0+ | Run with containers | Docker deployment |
+| **Docker Compose** | 2.0+ | Multi-container orchestration | Docker deployment |
+| **PostgreSQL** | 14+ | Database server | Local development without Docker |
+| **Make** | Any | Build automation | Optional convenience |
+| **golangci-lint** | Latest | Code linting | Development/CI |
+
+### Installation Instructions
+
+Choose your operating system:
+
+<details>
+<summary><b>🪟 Windows</b></summary>
+
+#### Install Go
+1. Download installer from [go.dev/dl](https://go.dev/dl/)
+2. Run the MSI installer
+3. Verify installation:
+   ```powershell
+   go version
+   ```
+
+#### Install Git
+1. Download from [git-scm.com](https://git-scm.com/download/win)
+2. Run installer with default options
+3. Verify installation:
+   ```powershell
+   git --version
+   ```
+
+#### Install Docker Desktop (Optional)
+1. Download from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/)
+2. Run installer
+3. Start Docker Desktop
+4. Verify installation:
+   ```powershell
+   docker --version
+   docker compose version
+   ```
+
+#### Install PostgreSQL (Optional - for local development)
+1. Download from [postgresql.org/download/windows](https://www.postgresql.org/download/windows/)
+2. Run installer
+3. Remember the password you set for the `postgres` user
+4. Verify installation:
+   ```powershell
+   psql --version
+   ```
+
+#### Install Make (Optional)
+Using Chocolatey:
+```powershell
+choco install make
+```
+Or download from [gnuwin32.sourceforge.net](http://gnuwin32.sourceforge.net/packages/make.htm)
+
+#### Install golangci-lint (Optional)
+```powershell
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+```
+
+</details>
+
+<details>
+<summary><b>🍎 macOS</b></summary>
+
+#### Install Homebrew (if not already installed)
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+#### Install Go
+```bash
+brew install go
+go version  # Verify installation
+```
+
+#### Install Git
+```bash
+brew install git
+git --version  # Verify installation
+```
+
+#### Install Docker Desktop (Optional)
+**Option 1 - GUI Installer:**
+1. Download from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/)
+2. Drag to Applications folder
+3. Start Docker Desktop
+
+**Option 2 - Homebrew:**
+```bash
+brew install --cask docker
+```
+
+Verify installation:
+```bash
+docker --version
+docker compose version
+```
+
+#### Install PostgreSQL (Optional - for local development)
+```bash
+brew install postgresql@15
+brew services start postgresql@15
+psql --version  # Verify installation
+```
+
+#### Install Make (Optional)
+Already included in macOS Xcode Command Line Tools:
+```bash
+xcode-select --install
+make --version  # Verify installation
+```
+
+#### Install golangci-lint (Optional)
+```bash
+brew install golangci-lint
+# or
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+```
+
+</details>
+
+<details>
+<summary><b>🐧 Linux (Ubuntu/Debian)</b></summary>
+
+#### Install Go
+```bash
+# Download and install
+wget https://go.dev/dl/go1.24.0.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go
+sudo tar -C /usr/local -xzf go1.24.0.linux-amd64.tar.gz
+
+# Add to PATH (add to ~/.bashrc or ~/.zshrc)
+export PATH=$PATH:/usr/local/go/bin
+export PATH=$PATH:$HOME/go/bin
+
+# Reload shell configuration
+source ~/.bashrc  # or source ~/.zshrc
+
+# Verify installation
+go version
+```
+
+#### Install Git
+```bash
+sudo apt-get update
+sudo apt-get install git -y
+git --version  # Verify installation
+```
+
+#### Install Docker (Optional)
+```bash
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+
+# Add your user to docker group (avoid using sudo)
+sudo usermod -aG docker $USER
+newgrp docker
+
+# Verify installation
+docker --version
+docker compose version
+```
+
+#### Install PostgreSQL (Optional - for local development)
+```bash
+sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib -y
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+psql --version  # Verify installation
+```
+
+#### Install Make (Optional)
+```bash
+sudo apt-get install build-essential -y
+make --version  # Verify installation
+```
+
+#### Install golangci-lint (Optional)
+```bash
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+```
+
+</details>
+
+<details>
+<summary><b>🐧 Linux (Fedora/RHEL/CentOS)</b></summary>
+
+#### Install Go
+```bash
+# Download and install
+wget https://go.dev/dl/go1.24.0.linux-amd64.tar.gz
+sudo rm -rf /usr/local/go
+sudo tar -C /usr/local -xzf go1.24.0.linux-amd64.tar.gz
+
+# Add to PATH (add to ~/.bashrc or ~/.zshrc)
+export PATH=$PATH:/usr/local/go/bin
+export PATH=$PATH:$HOME/go/bin
+
+# Reload shell configuration
+source ~/.bashrc
+
+# Verify installation
+go version
+```
+
+#### Install Git
+```bash
+sudo dnf install git -y
+git --version  # Verify installation
+```
+
+#### Install Docker (Optional)
+```bash
+sudo dnf install docker docker-compose -y
+sudo systemctl start docker
+sudo systemctl enable docker
+sudo usermod -aG docker $USER
+newgrp docker
+docker --version
+```
+
+#### Install PostgreSQL (Optional)
+```bash
+sudo dnf install postgresql postgresql-server -y
+sudo postgresql-setup --initdb
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+psql --version
+```
+
+#### Install Make (Optional)
+```bash
+sudo dnf groupinstall "Development Tools" -y
+make --version
+```
+
+#### Install golangci-lint (Optional)
+```bash
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+```
+
+</details>
+
+### Verify Your Installation
+
+After installing the required tools, verify everything is set up correctly:
+
+```bash
+# Check Go installation
+go version
+# Expected: go version go1.23.0 or later
+
+# Check Git installation
+git --version
+# Expected: git version 2.x.x or later
+
+# Check Docker installation (if using Docker)
+docker --version
+docker compose version
+# Expected: Docker version 20.x.x or later
+
+# Check PostgreSQL installation (if using local PostgreSQL)
+psql --version
+# Expected: psql (PostgreSQL) 14.x or later
+
+# Check Go environment
+go env GOPATH
+go env GOROOT
+# Verify these paths are set correctly
+```
+
+### Clone the Repository
+
+```bash
+# Clone via HTTPS
+git clone https://github.com/YOUR_USERNAME/TodoList.git
+cd TodoList
+
+# Or clone via SSH (if you have SSH keys set up)
+git clone git@github.com:YOUR_USERNAME/TodoList.git
+cd TodoList
+```
+
+### Install Go Dependencies
+
+```bash
+# Download all dependencies
+go mod download
+
+# Verify dependencies
+go mod verify
+
+# Tidy up (optional)
+go mod tidy
+```
+
+## Quick Start
 
 ### Running with Docker Compose (Recommended)
 
