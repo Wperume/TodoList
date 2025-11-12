@@ -57,6 +57,7 @@ func GenerateAccessToken(user *models.User, config *JWTConfig) (string, error) {
 		Email:  user.Email,
 		Role:   user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        uuid.New().String(), // Add unique JWT ID to ensure each token is unique
 			ExpiresAt: jwt.NewNumericDate(now.Add(config.AccessTokenDuration)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
@@ -119,7 +120,12 @@ func ExtractTokenFromHeader(authHeader string) (string, error) {
 		return "", errors.New("authorization header must start with 'Bearer '")
 	}
 
-	return authHeader[len(bearerPrefix):], nil
+	token := authHeader[len(bearerPrefix):]
+	if token == "" {
+		return "", errors.New("token is missing after 'Bearer ' prefix")
+	}
+
+	return token, nil
 }
 
 // Helper functions

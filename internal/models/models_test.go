@@ -36,6 +36,7 @@ func TestTodoListBeforeCreate(t *testing.T) {
 	// Migrate without default values that are PostgreSQL-specific
 	err = db.Exec(`CREATE TABLE IF NOT EXISTS todo_lists (
 		id TEXT PRIMARY KEY,
+		user_id TEXT NOT NULL,
 		name TEXT NOT NULL,
 		description TEXT,
 		created_at DATETIME,
@@ -46,6 +47,7 @@ func TestTodoListBeforeCreate(t *testing.T) {
 
 	t.Run("generates UUID if not set", func(t *testing.T) {
 		list := &TodoList{
+			UserID:      uuid.New(),
 			Name:        "Test List",
 			Description: "Test Description",
 		}
@@ -59,6 +61,7 @@ func TestTodoListBeforeCreate(t *testing.T) {
 		existingID := uuid.New()
 		list := &TodoList{
 			ID:          existingID,
+			UserID:      uuid.New(),
 			Name:        "Test List 2",
 			Description: "Test Description",
 		}
@@ -77,6 +80,7 @@ func TestTodoBeforeCreate(t *testing.T) {
 	// Create tables manually
 	err = db.Exec(`CREATE TABLE IF NOT EXISTS todo_lists (
 		id TEXT PRIMARY KEY,
+		user_id TEXT NOT NULL,
 		name TEXT NOT NULL,
 		description TEXT,
 		created_at DATETIME,
@@ -101,7 +105,10 @@ func TestTodoBeforeCreate(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Create a list first
-	list := &TodoList{Name: "Test List"}
+	list := &TodoList{
+		UserID: uuid.New(),
+		Name:   "Test List",
+	}
 	err = db.Create(list).Error
 	assert.NoError(t, err)
 

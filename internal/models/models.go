@@ -26,7 +26,7 @@ const (
 
 // User represents a registered user
 type User struct {
-	ID           uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	ID           uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	Email        string         `gorm:"uniqueIndex;not null;size:255" json:"email"`
 	PasswordHash string         `gorm:"not null;size:255" json:"-"` // Never expose password hash
 	FirstName    string         `gorm:"size:100" json:"firstName,omitempty"`
@@ -50,7 +50,7 @@ func (u *User) BeforeCreate(tx *gorm.DB) error {
 
 // RefreshToken represents a refresh token for JWT authentication
 type RefreshToken struct {
-	ID        uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	ID        uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID    uuid.UUID      `gorm:"type:uuid;not null;index" json:"userId"`
 	Token     string         `gorm:"uniqueIndex;not null;size:255" json:"-"` // Hashed token
 	ExpiresAt time.Time      `gorm:"not null;index" json:"expiresAt"`
@@ -75,7 +75,7 @@ func (rt *RefreshToken) IsValid() bool {
 
 // TodoList represents a named list containing todos
 type TodoList struct {
-	ID          uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	ID          uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	UserID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"userId"`
 	Name        string         `gorm:"not null;size:100;index:idx_user_list_name,unique" json:"name" binding:"required,min=1,max=100"`
 	Description string         `gorm:"size:500" json:"description,omitempty" binding:"max=500"`
@@ -109,7 +109,7 @@ type UpdateTodoListRequest struct {
 
 // Todo represents a todo item within a list
 type Todo struct {
-	ID          uuid.UUID      `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	ID          uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
 	ListID      uuid.UUID      `gorm:"type:uuid;not null;index" json:"listId"`
 	Description string         `gorm:"not null;size:500" json:"description" binding:"required,min=1,max=500"`
 	Priority    Priority       `gorm:"type:varchar(10);not null" json:"priority" binding:"required,oneof=low medium high"`

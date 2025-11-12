@@ -26,13 +26,30 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 
 	// Run migrations manually for SQLite compatibility
 	// SQLite doesn't support PostgreSQL UUID functions
-	err = db.Exec(`CREATE TABLE IF NOT EXISTS todo_lists (
+	err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
 		id TEXT PRIMARY KEY,
-		name TEXT NOT NULL UNIQUE,
-		description TEXT,
+		email TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		first_name TEXT,
+		last_name TEXT,
+		role TEXT NOT NULL DEFAULT 'user',
+		is_active INTEGER DEFAULT 1,
+		last_login_at DATETIME,
 		created_at DATETIME,
 		updated_at DATETIME,
 		deleted_at DATETIME
+	)`).Error
+	require.NoError(t, err, "Failed to create users table")
+
+	err = db.Exec(`CREATE TABLE IF NOT EXISTS todo_lists (
+		id TEXT PRIMARY KEY,
+		user_id TEXT NOT NULL,
+		name TEXT NOT NULL,
+		description TEXT,
+		created_at DATETIME,
+		updated_at DATETIME,
+		deleted_at DATETIME,
+		FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 	)`).Error
 	require.NoError(t, err, "Failed to create todo_lists table")
 
@@ -52,10 +69,19 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err, "Failed to create todos table")
 
 	// Create indexes
+	db.Exec(`CREATE INDEX idx_users_deleted_at ON users(deleted_at)`)
+	db.Exec(`CREATE INDEX idx_users_is_active ON users(is_active)`)
+	db.Exec(`CREATE INDEX idx_todo_lists_user_id ON todo_lists(user_id)`)
 	db.Exec(`CREATE INDEX idx_todo_lists_deleted_at ON todo_lists(deleted_at)`)
+	db.Exec(`CREATE UNIQUE INDEX idx_user_list_name ON todo_lists(user_id, name) WHERE deleted_at IS NULL`)
 	db.Exec(`CREATE INDEX idx_todos_list_id ON todos(list_id)`)
 	db.Exec(`CREATE INDEX idx_todos_completed ON todos(completed)`)
 	db.Exec(`CREATE INDEX idx_todos_deleted_at ON todos(deleted_at)`)
+
+	// Insert test user (used by postgres_test.go)
+	err = db.Exec(`INSERT INTO users (id, email, password_hash, role, is_active, created_at, updated_at)
+		VALUES ('11111111-1111-1111-1111-111111111111', 'test@example.com', '$2a$10$test', 'user', 1, datetime('now'), datetime('now'))`).Error
+	require.NoError(t, err, "Failed to create test user")
 
 	return db
 }

@@ -12,6 +12,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Test user ID for all tests
+var testUserID = uuid.MustParse("11111111-1111-1111-1111-111111111111")
+
 func TestPostgresCreateList(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	defer testutil.CleanupTestDB(t, db)
@@ -24,7 +27,7 @@ func TestPostgresCreateList(t *testing.T) {
 			Description: "Tasks for work",
 		}
 
-		list, err := store.CreateList(req)
+		list, err := store.CreateList(testUserID, req)
 		require.NoError(t, err)
 		assert.NotNil(t, list)
 		assert.NotEqual(t, uuid.Nil, list.ID)
@@ -38,12 +41,12 @@ func TestPostgresCreateList(t *testing.T) {
 			Name:        "Duplicate List",
 			Description: "First",
 		}
-		_, err := store.CreateList(req)
+		_, err := store.CreateList(testUserID, req)
 		require.NoError(t, err)
 
 		// Try to create with same name
 		req.Description = "Second"
-		_, err = store.CreateList(req)
+		_, err = store.CreateList(testUserID, req)
 		assert.ErrorIs(t, err, ErrListNameExists)
 	})
 }
@@ -59,12 +62,12 @@ func TestPostgresGetAllLists(t *testing.T) {
 		req := models.CreateTodoListRequest{
 			Name: "List " + string(rune(i+64)),
 		}
-		_, err := store.CreateList(req)
+		_, err := store.CreateList(testUserID, req)
 		require.NoError(t, err)
 	}
 
 	t.Run("returns paginated lists", func(t *testing.T) {
-		lists, pagination, err := store.GetAllLists(1, 10)
+		lists, pagination, err := store.GetAllLists(testUserID, 1, 10)
 		require.NoError(t, err)
 		assert.Len(t, lists, 10)
 		assert.Equal(t, 1, pagination.Page)
@@ -74,7 +77,7 @@ func TestPostgresGetAllLists(t *testing.T) {
 	})
 
 	t.Run("returns correct page", func(t *testing.T) {
-		lists, pagination, err := store.GetAllLists(2, 10)
+		lists, pagination, err := store.GetAllLists(testUserID, 2, 10)
 		require.NoError(t, err)
 		assert.Len(t, lists, 10)
 		assert.Equal(t, 2, pagination.Page)
@@ -88,18 +91,18 @@ func TestPostgresGetListByID(t *testing.T) {
 	store := NewPostgresStorage(db)
 
 	req := models.CreateTodoListRequest{Name: "Test List"}
-	created, err := store.CreateList(req)
+	created, err := store.CreateList(testUserID, req)
 	require.NoError(t, err)
 
 	t.Run("successfully retrieves list", func(t *testing.T) {
-		list, err := store.GetListByID(created.ID)
+		list, err := store.GetListByID(testUserID, created.ID)
 		require.NoError(t, err)
 		assert.Equal(t, created.ID, list.ID)
 		assert.Equal(t, created.Name, list.Name)
 	})
 
 	t.Run("fails when list not found", func(t *testing.T) {
-		_, err := store.GetListByID(uuid.New())
+		_, err := store.GetListByID(testUserID, uuid.New())
 		assert.ErrorIs(t, err, ErrListNotFound)
 	})
 }
@@ -114,14 +117,14 @@ func TestPostgresUpdateList(t *testing.T) {
 		Name:        "Original Name",
 		Description: "Original Description",
 	}
-	created, err := store.CreateList(req)
+	created, err := store.CreateList(testUserID, req)
 	require.NoError(t, err)
 
 	t.Run("successfully updates name", func(t *testing.T) {
 		newName := "Updated Name"
 		updateReq := models.UpdateTodoListRequest{Name: &newName}
 
-		updated, err := store.UpdateList(created.ID, updateReq)
+		updated, err := store.UpdateList(testUserID, created.ID, updateReq)
 		require.NoError(t, err)
 		assert.Equal(t, "Updated Name", updated.Name)
 		assert.Equal(t, "Original Description", updated.Description)
@@ -130,13 +133,13 @@ func TestPostgresUpdateList(t *testing.T) {
 	t.Run("fails when new name conflicts", func(t *testing.T) {
 		// Create another list
 		req2 := models.CreateTodoListRequest{Name: "Another List"}
-		_, err := store.CreateList(req2)
+		_, err := store.CreateList(testUserID, req2)
 		require.NoError(t, err)
 
 		// Try to update first list with second list's name
 		conflictName := "Another List"
 		updateReq := models.UpdateTodoListRequest{Name: &conflictName}
-		_, err = store.UpdateList(created.ID, updateReq)
+		_, err = store.UpdateList(testUserID, created.ID, updateReq)
 		assert.ErrorIs(t, err, ErrListNameExists)
 	})
 }
@@ -148,7 +151,7 @@ func TestPostgresDeleteList(t *testing.T) {
 	store := NewPostgresStorage(db)
 
 	req := models.CreateTodoListRequest{Name: "Test List"}
-	created, err := store.CreateList(req)
+	created, err := store.CreateList(testUserID, req)
 	require.NoError(t, err)
 
 	// Add a todo to test cascade delete
@@ -156,20 +159,20 @@ func TestPostgresDeleteList(t *testing.T) {
 		Description: "Test Todo",
 		Priority:    models.PriorityHigh,
 	}
-	_, err = store.CreateTodo(created.ID, todoReq)
+	_, err = store.CreateTodo(testUserID, created.ID, todoReq)
 	require.NoError(t, err)
 
 	t.Run("successfully deletes list (soft delete)", func(t *testing.T) {
-		err := store.DeleteList(created.ID)
+		err := store.DeleteList(testUserID, created.ID)
 		require.NoError(t, err)
 
 		// Verify list is not found (soft deleted)
-		_, err = store.GetListByID(created.ID)
+		_, err = store.GetListByID(testUserID, created.ID)
 		assert.ErrorIs(t, err, ErrListNotFound)
 	})
 
 	t.Run("fails when list not found", func(t *testing.T) {
-		err := store.DeleteList(uuid.New())
+		err := store.DeleteList(testUserID, uuid.New())
 		assert.ErrorIs(t, err, ErrListNotFound)
 	})
 }
@@ -181,7 +184,7 @@ func TestPostgresCreateTodo(t *testing.T) {
 	store := NewPostgresStorage(db)
 
 	req := models.CreateTodoListRequest{Name: "Test List"}
-	list, err := store.CreateList(req)
+	list, err := store.CreateList(testUserID, req)
 	require.NoError(t, err)
 
 	t.Run("successfully creates todo", func(t *testing.T) {
@@ -192,7 +195,7 @@ func TestPostgresCreateTodo(t *testing.T) {
 			DueDate:     &dueDate,
 		}
 
-		todo, err := store.CreateTodo(list.ID, todoReq)
+		todo, err := store.CreateTodo(testUserID, list.ID, todoReq)
 		require.NoError(t, err)
 		assert.NotEqual(t, uuid.Nil, todo.ID)
 		assert.Equal(t, list.ID, todo.ListID)
@@ -207,7 +210,7 @@ func TestPostgresCreateTodo(t *testing.T) {
 			Description: "Test",
 			Priority:    models.PriorityLow,
 		}
-		_, err := store.CreateTodo(uuid.New(), todoReq)
+		_, err := store.CreateTodo(testUserID, uuid.New(), todoReq)
 		assert.ErrorIs(t, err, ErrListNotFound)
 	})
 }
@@ -219,7 +222,7 @@ func TestPostgresGetTodosByList(t *testing.T) {
 	store := NewPostgresStorage(db)
 
 	req := models.CreateTodoListRequest{Name: "Test List"}
-	list, err := store.CreateList(req)
+	list, err := store.CreateList(testUserID, req)
 	require.NoError(t, err)
 
 	// Create todos with different priorities
@@ -230,19 +233,19 @@ func TestPostgresGetTodosByList(t *testing.T) {
 	}
 
 	for _, todoReq := range todos {
-		_, err := store.CreateTodo(list.ID, todoReq)
+		_, err := store.CreateTodo(testUserID, list.ID, todoReq)
 		require.NoError(t, err)
 	}
 
 	t.Run("gets all todos", func(t *testing.T) {
-		result, err := store.GetTodosByList(list.ID, nil, nil, "createdAt", "asc")
+		result, err := store.GetTodosByList(testUserID, list.ID, nil, nil, "createdAt", "asc")
 		require.NoError(t, err)
 		assert.Len(t, result, 3)
 	})
 
 	t.Run("filters by priority", func(t *testing.T) {
 		priority := models.PriorityHigh
-		result, err := store.GetTodosByList(list.ID, &priority, nil, "createdAt", "asc")
+		result, err := store.GetTodosByList(testUserID, list.ID, &priority, nil, "createdAt", "asc")
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 		assert.Equal(t, models.PriorityHigh, result[0].Priority)
@@ -250,13 +253,13 @@ func TestPostgresGetTodosByList(t *testing.T) {
 
 	t.Run("filters by completion status", func(t *testing.T) {
 		completed := false
-		result, err := store.GetTodosByList(list.ID, nil, &completed, "createdAt", "asc")
+		result, err := store.GetTodosByList(testUserID, list.ID, nil, &completed, "createdAt", "asc")
 		require.NoError(t, err)
 		assert.Len(t, result, 3)
 	})
 
 	t.Run("sorts by priority descending", func(t *testing.T) {
-		result, err := store.GetTodosByList(list.ID, nil, nil, "priority", "desc")
+		result, err := store.GetTodosByList(testUserID, list.ID, nil, nil, "priority", "desc")
 		require.NoError(t, err)
 		// Descending priority order: high -> medium -> low
 		assert.Equal(t, models.PriorityHigh, result[0].Priority)
@@ -271,21 +274,21 @@ func TestPostgresUpdateTodo(t *testing.T) {
 	store := NewPostgresStorage(db)
 
 	req := models.CreateTodoListRequest{Name: "Test List"}
-	list, err := store.CreateList(req)
+	list, err := store.CreateList(testUserID, req)
 	require.NoError(t, err)
 
 	todoReq := models.CreateTodoRequest{
 		Description: "Original",
 		Priority:    models.PriorityLow,
 	}
-	todo, err := store.CreateTodo(list.ID, todoReq)
+	todo, err := store.CreateTodo(testUserID, list.ID, todoReq)
 	require.NoError(t, err)
 
 	t.Run("marks todo as completed", func(t *testing.T) {
 		completed := true
 		updateReq := models.UpdateTodoRequest{Completed: &completed}
 
-		updated, err := store.UpdateTodo(list.ID, todo.ID, updateReq)
+		updated, err := store.UpdateTodo(testUserID, list.ID, todo.ID, updateReq)
 		require.NoError(t, err)
 		assert.True(t, updated.Completed)
 		assert.NotNil(t, updated.CompletedAt)
@@ -295,7 +298,7 @@ func TestPostgresUpdateTodo(t *testing.T) {
 		completed := false
 		updateReq := models.UpdateTodoRequest{Completed: &completed}
 
-		updated, err := store.UpdateTodo(list.ID, todo.ID, updateReq)
+		updated, err := store.UpdateTodo(testUserID, list.ID, todo.ID, updateReq)
 		require.NoError(t, err)
 		assert.False(t, updated.Completed)
 		assert.Nil(t, updated.CompletedAt)
@@ -311,7 +314,7 @@ func TestPostgresUpdateTodo(t *testing.T) {
 			Completed:   &completed,
 		}
 
-		updated, err := store.UpdateTodo(list.ID, todo.ID, updateReq)
+		updated, err := store.UpdateTodo(testUserID, list.ID, todo.ID, updateReq)
 		require.NoError(t, err)
 		assert.Equal(t, "Updated", updated.Description)
 		assert.Equal(t, models.PriorityHigh, updated.Priority)
@@ -326,21 +329,21 @@ func TestPostgresDeleteTodo(t *testing.T) {
 	store := NewPostgresStorage(db)
 
 	req := models.CreateTodoListRequest{Name: "Test List"}
-	list, err := store.CreateList(req)
+	list, err := store.CreateList(testUserID, req)
 	require.NoError(t, err)
 
 	todoReq := models.CreateTodoRequest{
 		Description: "Test",
 		Priority:    models.PriorityMedium,
 	}
-	todo, err := store.CreateTodo(list.ID, todoReq)
+	todo, err := store.CreateTodo(testUserID, list.ID, todoReq)
 	require.NoError(t, err)
 
 	t.Run("successfully deletes todo", func(t *testing.T) {
-		err := store.DeleteTodo(list.ID, todo.ID)
+		err := store.DeleteTodo(testUserID, list.ID, todo.ID)
 		require.NoError(t, err)
 
-		_, err = store.GetTodoByID(list.ID, todo.ID)
+		_, err = store.GetTodoByID(testUserID, list.ID, todo.ID)
 		assert.ErrorIs(t, err, ErrTodoNotFound)
 	})
 }
@@ -352,7 +355,7 @@ func TestPostgresTodoCount(t *testing.T) {
 	store := NewPostgresStorage(db)
 
 	req := models.CreateTodoListRequest{Name: "Test List"}
-	list, err := store.CreateList(req)
+	list, err := store.CreateList(testUserID, req)
 	require.NoError(t, err)
 
 	// Create multiple todos
@@ -361,12 +364,12 @@ func TestPostgresTodoCount(t *testing.T) {
 			Description: "Todo " + string(rune(i+48)),
 			Priority:    models.PriorityMedium,
 		}
-		_, err := store.CreateTodo(list.ID, todoReq)
+		_, err := store.CreateTodo(testUserID, list.ID, todoReq)
 		require.NoError(t, err)
 	}
 
 	t.Run("todo count is accurate", func(t *testing.T) {
-		updated, err := store.GetListByID(list.ID)
+		updated, err := store.GetListByID(testUserID, list.ID)
 		require.NoError(t, err)
 		assert.Equal(t, 5, updated.TodoCount)
 	})
