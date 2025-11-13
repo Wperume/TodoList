@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func TestPriorityConstants(t *testing.T) {
@@ -30,7 +31,9 @@ func TestPriorityConstants(t *testing.T) {
 
 func TestTodoListBeforeCreate(t *testing.T) {
 	// Setup test database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	assert.NoError(t, err)
 
 	// Migrate without default values that are PostgreSQL-specific
@@ -74,7 +77,9 @@ func TestTodoListBeforeCreate(t *testing.T) {
 
 func TestTodoBeforeCreate(t *testing.T) {
 	// Setup test database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	assert.NoError(t, err)
 
 	// Create tables manually
@@ -273,7 +278,9 @@ func TestErrorResponse(t *testing.T) {
 
 func TestUserBeforeCreate(t *testing.T) {
 	// Setup test database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	assert.NoError(t, err)
 
 	// Create users table
@@ -325,7 +332,9 @@ func TestUserBeforeCreate(t *testing.T) {
 
 func TestRefreshTokenBeforeCreate(t *testing.T) {
 	// Setup test database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	assert.NoError(t, err)
 
 	// Create users table first (for foreign key)
