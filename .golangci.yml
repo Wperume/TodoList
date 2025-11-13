@@ -18,16 +18,15 @@ linters-settings:
     min-complexity: 15
   goimports:
     local-prefixes: todolist-api
-  golint:
-    min-confidence: 0
   govet:
-    check-shadowing: true
+    enable:
+      - shadow
   lll:
     line-length: 140
-  maligned:
-    suggest-new: true
   misspell:
     locale: US
+  revive:
+    confidence: 0
 
 linters:
   disable-all: true
@@ -85,17 +84,17 @@ issues:
 run:
   timeout: 5m
   tests: true
-  skip-dirs:
+  exclude-dirs:
     - vendor
     - testdata
     - examples
-  skip-files:
+  exclude-files:
     - ".*\\.pb\\.go$"
     - ".*_generated\\.go$"
 
 output:
-  format: colored-line-number
+  formats:
+    - format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
-  uniq-by-line: true
   sort-results: true
