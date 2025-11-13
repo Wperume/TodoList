@@ -68,7 +68,7 @@ jobs:
         DB_PASSWORD: todopassword
         DB_NAME: todolist
         DB_SSLMODE: disable
-      run: go test -v -coverprofile=coverage.txt -covermode=atomic ./... 2> >(grep -v 'no such tool "covdata"' >&2)
+      run: go test -v -coverprofile=coverage.txt -covermode=atomic ./... 2>&1 | grep -v 'no such tool "covdata"' || test $? = 1
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
