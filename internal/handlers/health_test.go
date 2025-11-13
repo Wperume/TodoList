@@ -94,8 +94,8 @@ func TestDetailedHealth_Healthy(t *testing.T) {
 		WithArgs().
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
-	// Mock migration version query
-	mock.ExpectQuery(`SELECT version, dirty FROM schema_migrations`).
+	// Mock migration version query - use regexp to match multiline query
+	mock.ExpectQuery(`SELECT version, dirty\s+FROM schema_migrations\s+LIMIT 1`).
 		WillReturnRows(sqlmock.NewRows([]string{"version", "dirty"}).AddRow(1, false))
 
 	gin.SetMode(gin.TestMode)
@@ -321,11 +321,11 @@ func TestCheckMigrations_Healthy(t *testing.T) {
 	defer cleanup()
 
 	// Mock migration check - table exists query
-	mock.ExpectQuery(`SELECT EXISTS`).
+	mock.ExpectQuery(`SELECT EXISTS \(\s+SELECT FROM information_schema\.tables\s+WHERE table_name = 'schema_migrations'\s+\)`).
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
-	// Mock migration version query
-	mock.ExpectQuery(`SELECT version, dirty FROM schema_migrations`).
+	// Mock migration version query - use regexp to match multiline query
+	mock.ExpectQuery(`SELECT version, dirty\s+FROM schema_migrations\s+LIMIT 1`).
 		WillReturnRows(sqlmock.NewRows([]string{"version", "dirty"}).AddRow(1, false))
 
 	check := handler.checkMigrations()
@@ -344,11 +344,11 @@ func TestCheckMigrations_Dirty(t *testing.T) {
 	defer cleanup()
 
 	// Mock migration check - table exists query
-	mock.ExpectQuery(`SELECT EXISTS`).
+	mock.ExpectQuery(`SELECT EXISTS \(\s+SELECT FROM information_schema\.tables\s+WHERE table_name = 'schema_migrations'\s+\)`).
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
-	// Mock migration version query with dirty state
-	mock.ExpectQuery(`SELECT version, dirty FROM schema_migrations`).
+	// Mock migration version query with dirty state - use regexp to match multiline query
+	mock.ExpectQuery(`SELECT version, dirty\s+FROM schema_migrations\s+LIMIT 1`).
 		WillReturnRows(sqlmock.NewRows([]string{"version", "dirty"}).AddRow(2, true))
 
 	check := handler.checkMigrations()
@@ -550,8 +550,8 @@ func TestCheckMigrations_QueryError(t *testing.T) {
 	handler, mock, cleanup := setupHealthTest(t)
 	defer cleanup()
 
-	// Mock query error
-	mock.ExpectQuery(`SELECT EXISTS`).
+	// Mock query error - use regexp to match multiline query with whitespace
+	mock.ExpectQuery(`SELECT EXISTS \(\s+SELECT FROM information_schema\.tables\s+WHERE table_name = 'schema_migrations'\s+\)`).
 		WillReturnError(errors.New("query failed"))
 
 	check := handler.checkMigrations()
@@ -567,12 +567,12 @@ func TestCheckMigrations_ScanError(t *testing.T) {
 	handler, mock, cleanup := setupHealthTest(t)
 	defer cleanup()
 
-	// Mock table exists
-	mock.ExpectQuery(`SELECT EXISTS`).
+	// Mock table exists - use regexp to match multiline query
+	mock.ExpectQuery(`SELECT EXISTS \(\s+SELECT FROM information_schema\.tables\s+WHERE table_name = 'schema_migrations'\s+\)`).
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
-	// Mock version query with error
-	mock.ExpectQuery(`SELECT version, dirty FROM schema_migrations`).
+	// Mock version query with error - use regexp to match multiline query
+	mock.ExpectQuery(`SELECT version, dirty\s+FROM schema_migrations\s+LIMIT 1`).
 		WillReturnError(sql.ErrNoRows)
 
 	check := handler.checkMigrations()
