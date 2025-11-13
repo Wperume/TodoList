@@ -62,10 +62,10 @@ func TestNewRateLimitConfigFromEnv(t *testing.T) {
 
 		config := NewRateLimitConfigFromEnv()
 
-		// ParseInt returns 0 on error, so invalid values should result in 0
-		assert.Equal(t, int64(0), config.RequestsPerMin)
-		assert.Equal(t, int64(0), config.RequestsPerHour)
-		assert.Equal(t, int64(0), config.BurstSize)
+		// Invalid values should fall back to defaults
+		assert.Equal(t, int64(60), config.RequestsPerMin)
+		assert.Equal(t, int64(1000), config.RequestsPerHour)
+		assert.Equal(t, int64(10), config.BurstSize)
 	})
 }
 
