@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func setupHealthTest(t *testing.T) (*HealthHandler, sqlmock.Sqlmock, func()) {
@@ -25,13 +26,15 @@ func setupHealthTest(t *testing.T) (*HealthHandler, sqlmock.Sqlmock, func()) {
 	// Expect ping during GORM initialization
 	mock.ExpectPing()
 
-	// Create GORM DB with mock
+	// Create GORM DB with mock and silent logger to suppress error logs in tests
 	dialector := postgres.New(postgres.Config{
 		Conn:       sqlDB,
 		DriverName: "postgres",
 	})
 
-	db, err := gorm.Open(dialector, &gorm.Config{})
+	db, err := gorm.Open(dialector, &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	require.NoError(t, err)
 
 	handler := NewHealthHandler(db)
