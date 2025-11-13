@@ -24,26 +24,31 @@ func main() {
 	}
 	defer migrator.Close()
 
+	// Run command and exit with appropriate code
+	if err := runCommand(migrator, command, os.Args[2:]); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func runCommand(migrator *migration.Migrator, command string, args []string) error {
 	switch command {
 	case "up":
 		if err := migrator.Up(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Failed to run migrations: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to run migrations: %w", err)
 		}
 		fmt.Println("✅ Migrations applied successfully")
 
 	case "down":
 		if err := migrator.Down(); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Failed to rollback migration: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to rollback migration: %w", err)
 		}
 		fmt.Println("✅ Migration rolled back successfully")
 
 	case "version":
 		version, dirty, err := migrator.Version()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Failed to get version: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to get version: %w", err)
 		}
 		if dirty {
 			fmt.Printf("Current version: %d (dirty)\n", version)
@@ -53,45 +58,40 @@ func main() {
 		}
 
 	case "steps":
-		if len(os.Args) < 3 {
-			fmt.Fprintf(os.Stderr, "Error: 'steps' command requires number of steps\n")
+		if len(args) < 1 {
 			printUsage()
-			os.Exit(1)
+			return fmt.Errorf("'steps' command requires number of steps")
 		}
-		n, err := strconv.Atoi(os.Args[2])
+		n, err := strconv.Atoi(args[0])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Invalid number of steps: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("invalid number of steps: %w", err)
 		}
 		if err := migrator.Steps(n); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Failed to run %d steps: %v\n", n, err)
-			os.Exit(1)
+			return fmt.Errorf("failed to run %d steps: %w", n, err)
 		}
 		fmt.Printf("✅ Successfully ran %d migration steps\n", n)
 
 	case "force":
-		if len(os.Args) < 3 {
-			fmt.Fprintf(os.Stderr, "Error: 'force' command requires version number\n")
+		if len(args) < 1 {
 			printUsage()
-			os.Exit(1)
+			return fmt.Errorf("'force' command requires version number")
 		}
-		version, err := strconv.Atoi(os.Args[2])
+		version, err := strconv.Atoi(args[0])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Invalid version number: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("invalid version number: %w", err)
 		}
 		if err := migrator.Force(version); err != nil {
-			fmt.Fprintf(os.Stderr, "Error: Failed to force version: %v\n", err)
-			os.Exit(1)
+			return fmt.Errorf("failed to force version: %w", err)
 		}
 		fmt.Printf("✅ Forced migration version to %d\n", version)
 		fmt.Println("⚠️  Warning: This does not run migrations. Make sure database state matches the forced version.")
 
 	default:
-		fmt.Fprintf(os.Stderr, "Error: Unknown command: %s\n", command)
 		printUsage()
-		os.Exit(1)
+		return fmt.Errorf("unknown command: %s", command)
 	}
+
+	return nil
 }
 
 func printUsage() {

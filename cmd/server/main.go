@@ -17,9 +17,9 @@ import (
 	tlsconfig "todolist-api/internal/tls"
 
 	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"gorm.io/gorm"
 
 	_ "todolist-api/docs" // Import generated docs
 )
@@ -157,11 +157,9 @@ func main() {
 				protected := auth.Group("")
 				protected.Use(middleware.AuthMiddleware(jwtConfig))
 				protected.Use(middleware.PerUserRateLimiter(rateLimitConfig))
-				{
-					protected.GET("/profile", authHandler.GetProfile)
-					protected.PUT("/profile", authHandler.UpdateProfile)
-					protected.PUT("/password", authHandler.ChangePassword)
-				}
+				protected.GET("/profile", authHandler.GetProfile)
+				protected.PUT("/profile", authHandler.UpdateProfile)
+				protected.PUT("/password", authHandler.ChangePassword)
 			}
 		}
 
@@ -172,22 +170,20 @@ func main() {
 			// Apply per-user rate limiting after auth (user_id is set in context)
 			lists.Use(middleware.PerUserRateLimiter(rateLimitConfig))
 		}
-		{
-			lists.GET("", listHandler.GetAllLists)
-			lists.POST("", listHandler.CreateList)
+		lists.GET("", listHandler.GetAllLists)
+		lists.POST("", listHandler.CreateList)
 
-			// Routes with listId parameter - validate UUID
-			lists.GET("/:listId", middleware.UUIDValidator("listId"), listHandler.GetListByID)
-			lists.PUT("/:listId", middleware.UUIDValidator("listId"), listHandler.UpdateList)
-			lists.DELETE("/:listId", middleware.UUIDValidator("listId"), listHandler.DeleteList)
+		// Routes with listId parameter - validate UUID
+		lists.GET("/:listId", middleware.UUIDValidator("listId"), listHandler.GetListByID)
+		lists.PUT("/:listId", middleware.UUIDValidator("listId"), listHandler.UpdateList)
+		lists.DELETE("/:listId", middleware.UUIDValidator("listId"), listHandler.DeleteList)
 
-			// Todo routes (nested under lists) - validate both listId and todoId
-			lists.GET("/:listId/todos", middleware.UUIDValidator("listId"), todoHandler.GetTodosByList)
-			lists.POST("/:listId/todos", middleware.UUIDValidator("listId"), todoHandler.CreateTodo)
-			lists.GET("/:listId/todos/:todoId", middleware.UUIDValidator("listId", "todoId"), todoHandler.GetTodoByID)
-			lists.PUT("/:listId/todos/:todoId", middleware.UUIDValidator("listId", "todoId"), todoHandler.UpdateTodo)
-			lists.DELETE("/:listId/todos/:todoId", middleware.UUIDValidator("listId", "todoId"), todoHandler.DeleteTodo)
-		}
+		// Todo routes (nested under lists) - validate both listId and todoId
+		lists.GET("/:listId/todos", middleware.UUIDValidator("listId"), todoHandler.GetTodosByList)
+		lists.POST("/:listId/todos", middleware.UUIDValidator("listId"), todoHandler.CreateTodo)
+		lists.GET("/:listId/todos/:todoId", middleware.UUIDValidator("listId", "todoId"), todoHandler.GetTodoByID)
+		lists.PUT("/:listId/todos/:todoId", middleware.UUIDValidator("listId", "todoId"), todoHandler.UpdateTodo)
+		lists.DELETE("/:listId/todos/:todoId", middleware.UUIDValidator("listId", "todoId"), todoHandler.DeleteTodo)
 	}
 
 	// Health check endpoints
@@ -210,9 +206,7 @@ func main() {
 	if jwtConfig != nil {
 		swagger := router.Group("/swagger")
 		swagger.Use(middleware.AuthMiddleware(jwtConfig))
-		{
-			swagger.GET("/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-		}
+		swagger.GET("/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	} else {
 		// Fallback for in-memory mode (no auth available)
 		// In production with database, this branch won't execute

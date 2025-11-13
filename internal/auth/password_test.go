@@ -8,9 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const testPassword = "SecurePassword123!"
+
 func TestHashPassword(t *testing.T) {
 	t.Run("hashes password successfully", func(t *testing.T) {
-		password := "SecurePassword123!"
+		password := testPassword
 		hash, err := HashPassword(password)
 		require.NoError(t, err)
 		assert.NotEmpty(t, hash)
@@ -18,7 +20,7 @@ func TestHashPassword(t *testing.T) {
 	})
 
 	t.Run("generates different hashes for same password", func(t *testing.T) {
-		password := "SecurePassword123!"
+		password := testPassword
 		hash1, err := HashPassword(password)
 		require.NoError(t, err)
 
@@ -59,7 +61,7 @@ func TestHashPassword(t *testing.T) {
 }
 
 func TestVerifyPassword(t *testing.T) {
-	password := "SecurePassword123!"
+	password := testPassword
 	hash, err := HashPassword(password)
 	require.NoError(t, err)
 
@@ -123,7 +125,7 @@ func TestValidatePasswordRequirements(t *testing.T) {
 
 func TestPasswordSecurity(t *testing.T) {
 	t.Run("hash is not reversible", func(t *testing.T) {
-		password := "SecurePassword123!"
+		password := testPassword
 		hash, err := HashPassword(password)
 		require.NoError(t, err)
 
@@ -132,7 +134,7 @@ func TestPasswordSecurity(t *testing.T) {
 	})
 
 	t.Run("hash starts with bcrypt identifier", func(t *testing.T) {
-		password := "SecurePassword123!"
+		password := testPassword
 		hash, err := HashPassword(password)
 		require.NoError(t, err)
 
@@ -143,7 +145,7 @@ func TestPasswordSecurity(t *testing.T) {
 	})
 
 	t.Run("uses correct cost factor", func(t *testing.T) {
-		password := "SecurePassword123!"
+		password := testPassword
 		hash, err := HashPassword(password)
 		require.NoError(t, err)
 
