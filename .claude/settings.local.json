@@ -20,7 +20,8 @@
       "Bash(./todolist-api:*)",
       "Bash(cat:*)",
       "Bash(pkill:*)",
-      "Bash(go tool cover:*)"
+      "Bash(go tool cover:*)",
+      "Bash(gofmt:*)"
     ],
     "deny": [],
     "ask": []
