@@ -35,53 +35,19 @@ func (h *TodoHandler) GetTodosByList(c *gin.Context) {
 		return
 	}
 
-	// Parse query parameters
-	var priority *models.Priority
-	if priorityStr := c.Query("priority"); priorityStr != "" {
-		p := models.Priority(priorityStr)
-		if p != models.PriorityLow && p != models.PriorityMedium && p != models.PriorityHigh {
-			c.JSON(http.StatusBadRequest, models.ErrorResponse{
-				Code:    "INVALID_PRIORITY",
-				Message: "Priority must be one of: low, medium, high",
-			})
-			return
-		}
-		priority = &p
-	}
-
-	var completed *bool
-	if completedStr := c.Query("completed"); completedStr != "" {
-		if completedStr == "true" {
-			t := true
-			completed = &t
-		} else if completedStr == "false" {
-			f := false
-			completed = &f
-		} else {
-			c.JSON(http.StatusBadRequest, models.ErrorResponse{
-				Code:    "INVALID_COMPLETED",
-				Message: "Completed must be true or false",
-			})
-			return
-		}
-	}
-
-	sortBy := c.DefaultQuery("sortBy", "createdAt")
-	sortOrder := c.DefaultQuery("sortOrder", "asc")
-
-	// Validate sort parameters
-	if sortBy != "dueDate" && sortBy != "priority" && sortBy != "createdAt" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Code:    "INVALID_SORT_BY",
-			Message: "sortBy must be one of: dueDate, priority, createdAt",
-		})
+	// Parse and validate query parameters
+	priority, ok := parsePriorityFilter(c)
+	if !ok {
 		return
 	}
-	if sortOrder != "asc" && sortOrder != "desc" {
-		c.JSON(http.StatusBadRequest, models.ErrorResponse{
-			Code:    "INVALID_SORT_ORDER",
-			Message: "sortOrder must be asc or desc",
-		})
+
+	completed, ok := parseCompletedFilter(c)
+	if !ok {
+		return
+	}
+
+	sortBy, sortOrder, ok := parseSortParams(c)
+	if !ok {
 		return
 	}
 
@@ -119,11 +85,11 @@ func (h *TodoHandler) CreateTodo(c *gin.Context) {
 	}
 
 	var req models.CreateTodoRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Code:    "INVALID_INPUT",
 			Message: "Invalid request body",
-			Details: map[string]interface{}{"error": err.Error()},
+			Details: map[string]interface{}{"error": bindErr.Error()},
 		})
 		return
 	}
@@ -220,11 +186,11 @@ func (h *TodoHandler) UpdateTodo(c *gin.Context) {
 	}
 
 	var req models.UpdateTodoRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Code:    "INVALID_INPUT",
 			Message: "Invalid request body",
-			Details: map[string]interface{}{"error": err.Error()},
+			Details: map[string]interface{}{"error": bindErr.Error()},
 		})
 		return
 	}
@@ -302,4 +268,68 @@ func (h *TodoHandler) DeleteTodo(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// Helper functions for query parameter validation
+
+func parsePriorityFilter(c *gin.Context) (*models.Priority, bool) {
+	priorityStr := c.Query("priority")
+	if priorityStr == "" {
+		return nil, true
+	}
+
+	p := models.Priority(priorityStr)
+	if p != models.PriorityLow && p != models.PriorityMedium && p != models.PriorityHigh {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Code:    "INVALID_PRIORITY",
+			Message: "Priority must be one of: low, medium, high",
+		})
+		return nil, false
+	}
+	return &p, true
+}
+
+func parseCompletedFilter(c *gin.Context) (*bool, bool) {
+	completedStr := c.Query("completed")
+	if completedStr == "" {
+		return nil, true
+	}
+
+	switch completedStr {
+	case "true":
+		t := true
+		return &t, true
+	case "false":
+		f := false
+		return &f, true
+	default:
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Code:    "INVALID_COMPLETED",
+			Message: "Completed must be true or false",
+		})
+		return nil, false
+	}
+}
+
+func parseSortParams(c *gin.Context) (string, string, bool) {
+	sortBy := c.DefaultQuery("sortBy", "createdAt")
+	sortOrder := c.DefaultQuery("sortOrder", "asc")
+
+	if sortBy != "dueDate" && sortBy != "priority" && sortBy != "createdAt" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Code:    "INVALID_SORT_BY",
+			Message: "sortBy must be one of: dueDate, priority, createdAt",
+		})
+		return "", "", false
+	}
+
+	if sortOrder != "asc" && sortOrder != "desc" {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Code:    "INVALID_SORT_ORDER",
+			Message: "sortOrder must be asc or desc",
+		})
+		return "", "", false
+	}
+
+	return sortBy, sortOrder, true
 }

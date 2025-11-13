@@ -200,7 +200,7 @@ func TestRegister(t *testing.T) {
 	t.Run("returns error for invalid JSON", func(t *testing.T) {
 		handler, _ := setupAuthHandler(t)
 
-		req := httptest.NewRequest("POST", "/auth/register", nil)
+		req := httptest.NewRequest("POST", "/auth/register", http.NoBody)
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -318,7 +318,7 @@ func TestLogin(t *testing.T) {
 	t.Run("returns error for invalid JSON", func(t *testing.T) {
 		handler, _ := setupAuthHandler(t)
 
-		req := httptest.NewRequest("POST", "/auth/login", nil)
+		req := httptest.NewRequest("POST", "/auth/login", http.NoBody)
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -449,7 +449,7 @@ func TestRefreshToken(t *testing.T) {
 	t.Run("returns error for invalid JSON", func(t *testing.T) {
 		handler, _ := setupAuthHandler(t)
 
-		req := httptest.NewRequest("POST", "/auth/refresh", nil)
+		req := httptest.NewRequest("POST", "/auth/refresh", http.NoBody)
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 

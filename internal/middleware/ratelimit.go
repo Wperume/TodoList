@@ -24,9 +24,20 @@ type RateLimitConfig struct {
 func NewRateLimitConfigFromEnv() *RateLimitConfig {
 	enabled := getEnv("RATE_LIMIT_ENABLED", "true") == "true"
 
-	requestsPerMin, _ := strconv.ParseInt(getEnv("RATE_LIMIT_REQUESTS_PER_MIN", "60"), 10, 64)
-	requestsPerHour, _ := strconv.ParseInt(getEnv("RATE_LIMIT_REQUESTS_PER_HOUR", "1000"), 10, 64)
-	burstSize, _ := strconv.ParseInt(getEnv("RATE_LIMIT_BURST", "10"), 10, 64)
+	requestsPerMin, err := strconv.ParseInt(getEnv("RATE_LIMIT_REQUESTS_PER_MIN", "60"), 10, 64)
+	if err != nil {
+		requestsPerMin = 60 // default value
+	}
+
+	requestsPerHour, err := strconv.ParseInt(getEnv("RATE_LIMIT_REQUESTS_PER_HOUR", "1000"), 10, 64)
+	if err != nil {
+		requestsPerHour = 1000 // default value
+	}
+
+	burstSize, err := strconv.ParseInt(getEnv("RATE_LIMIT_BURST", "10"), 10, 64)
+	if err != nil {
+		burstSize = 10 // default value
+	}
 
 	return &RateLimitConfig{
 		Enabled:         enabled,
@@ -81,6 +92,36 @@ func GlobalRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 	return middleware
 }
 
+// createOperationRateLimiter creates a rate limiter for specific operation types
+func createOperationRateLimiter(limit int64, limitType string, message string) gin.HandlerFunc {
+	rate := limiter.Rate{
+		Period: 1 * time.Minute,
+		Limit:  limit,
+	}
+
+	store := memory.NewStore()
+	instance := limiter.New(store, rate)
+
+	return mgin.NewMiddleware(instance, mgin.WithLimitReachedHandler(func(c *gin.Context) {
+		logging.Logger.WithFields(map[string]interface{}{
+			"client_ip":     c.ClientIP(),
+			"path":          c.Request.URL.Path,
+			"method":        c.Request.Method,
+			"rate_limited":  true,
+			"limit_type":    limitType,
+			"limit_per_min": rate.Limit,
+		}).Warnf("%s rate limit exceeded", limitType)
+
+		c.JSON(http.StatusTooManyRequests, gin.H{
+			"code":       "RATE_LIMIT_EXCEEDED",
+			"message":    message,
+			"retryAfter": int(rate.Period.Seconds()),
+			"limit":      rate.Limit,
+		})
+		c.Abort()
+	}))
+}
+
 // ReadRateLimiter creates a rate limiter for read operations (GET requests)
 func ReadRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 	if !config.Enabled {
@@ -90,34 +131,11 @@ func ReadRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 	}
 
 	// Read operations can have higher limits
-	rate := limiter.Rate{
-		Period: 1 * time.Minute,
-		Limit:  config.RequestsPerMin * 2, // Double the limit for reads
-	}
-
-	store := memory.NewStore()
-	instance := limiter.New(store, rate)
-
-	middleware := mgin.NewMiddleware(instance, mgin.WithLimitReachedHandler(func(c *gin.Context) {
-		logging.Logger.WithFields(map[string]interface{}{
-			"client_ip":       c.ClientIP(),
-			"path":            c.Request.URL.Path,
-			"method":          c.Request.Method,
-			"rate_limited":    true,
-			"limit_type":      "read",
-			"limit_per_min":   rate.Limit,
-		}).Warn("Read rate limit exceeded")
-
-		c.JSON(http.StatusTooManyRequests, gin.H{
-			"code":       "RATE_LIMIT_EXCEEDED",
-			"message":    "Too many read requests. Please try again later.",
-			"retryAfter": int(rate.Period.Seconds()),
-			"limit":      rate.Limit,
-		})
-		c.Abort()
-	}))
-
-	return middleware
+	return createOperationRateLimiter(
+		config.RequestsPerMin*2,
+		"read",
+		"Too many read requests. Please try again later.",
+	)
 }
 
 // WriteRateLimiter creates a rate limiter for write operations (POST, PUT, DELETE)
@@ -129,34 +147,11 @@ func WriteRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 	}
 
 	// Write operations have stricter limits
-	rate := limiter.Rate{
-		Period: 1 * time.Minute,
-		Limit:  config.RequestsPerMin / 2, // Half the limit for writes
-	}
-
-	store := memory.NewStore()
-	instance := limiter.New(store, rate)
-
-	middleware := mgin.NewMiddleware(instance, mgin.WithLimitReachedHandler(func(c *gin.Context) {
-		logging.Logger.WithFields(map[string]interface{}{
-			"client_ip":       c.ClientIP(),
-			"path":            c.Request.URL.Path,
-			"method":          c.Request.Method,
-			"rate_limited":    true,
-			"limit_type":      "write",
-			"limit_per_min":   rate.Limit,
-		}).Warn("Write rate limit exceeded")
-
-		c.JSON(http.StatusTooManyRequests, gin.H{
-			"code":       "RATE_LIMIT_EXCEEDED",
-			"message":    "Too many write requests. Please try again later.",
-			"retryAfter": int(rate.Period.Seconds()),
-			"limit":      rate.Limit,
-		})
-		c.Abort()
-	}))
-
-	return middleware
+	return createOperationRateLimiter(
+		config.RequestsPerMin/2,
+		"write",
+		"Too many write requests. Please try again later.",
+	)
 }
 
 // PerUserRateLimiter creates a rate limiter that tracks limits per user
@@ -185,7 +180,9 @@ func PerUserRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 	keyGetter := func(c *gin.Context) string {
 		// Try to get user ID from context (set by auth middleware)
 		if userIDValue, exists := c.Get("user_id"); exists {
-			return "user:" + userIDValue.(string)
+			if userIDStr, ok := userIDValue.(string); ok {
+				return "user:" + userIDStr
+			}
 		}
 
 		// Fall back to IP-based limiting for unauthenticated requests
@@ -201,8 +198,10 @@ func PerUserRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 			identifier := c.ClientIP()
 
 			if userIDValue, exists := c.Get("user_id"); exists {
-				limitType = "user"
-				identifier = userIDValue.(string)
+				if userIDStr, ok := userIDValue.(string); ok {
+					limitType = "user"
+					identifier = userIDStr
+				}
 			}
 
 			// Log rate limit violation
