@@ -10,6 +10,7 @@ import (
 )
 
 func TestCORS(t *testing.T) {
+	setupTest()
 	gin.SetMode(gin.TestMode)
 
 	t.Run("allows all origins with wildcard", func(t *testing.T) {
@@ -177,6 +178,7 @@ func TestCORS(t *testing.T) {
 }
 
 func TestIsOriginAllowed(t *testing.T) {
+	setupTest()
 	tests := []struct {
 		name     string
 		origin   string
@@ -203,6 +205,7 @@ func TestIsOriginAllowed(t *testing.T) {
 }
 
 func TestParseCommaSeparated(t *testing.T) {
+	setupTest()
 	tests := []struct {
 		name     string
 		input    string

@@ -41,7 +41,7 @@ type User struct {
 }
 
 // BeforeCreate hook to generate UUID if not set
-func (u *User) BeforeCreate(tx *gorm.DB) error {
+func (u *User) BeforeCreate(_ *gorm.DB) error {
 	if u.ID == uuid.Nil {
 		u.ID = uuid.New()
 	}
@@ -61,7 +61,7 @@ type RefreshToken struct {
 }
 
 // BeforeCreate hook to generate UUID if not set
-func (rt *RefreshToken) BeforeCreate(tx *gorm.DB) error {
+func (rt *RefreshToken) BeforeCreate(_ *gorm.DB) error {
 	if rt.ID == uuid.Nil {
 		rt.ID = uuid.New()
 	}
@@ -88,7 +88,7 @@ type TodoList struct {
 }
 
 // BeforeCreate hook to generate UUID if not set
-func (t *TodoList) BeforeCreate(tx *gorm.DB) error {
+func (t *TodoList) BeforeCreate(_ *gorm.DB) error {
 	if t.ID == uuid.Nil {
 		t.ID = uuid.New()
 	}

@@ -35,8 +35,8 @@ func New(cfg *Config) (*Migrator, error) {
 	}
 
 	// Test connection
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+	if pingErr := db.Ping(); pingErr != nil {
+		return nil, fmt.Errorf("failed to ping database: %w", pingErr)
 	}
 
 	// Create postgres driver instance
@@ -88,8 +88,8 @@ func (m *Migrator) Steps(n int) error {
 }
 
 // Version returns the current migration version
-func (m *Migrator) Version() (uint, bool, error) {
-	version, dirty, err := m.migrate.Version()
+func (m *Migrator) Version() (version uint, dirty bool, err error) {
+	version, dirty, err = m.migrate.Version()
 	if err != nil && err != migrate.ErrNilVersion {
 		return 0, false, fmt.Errorf("failed to get migration version: %w", err)
 	}

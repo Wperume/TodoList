@@ -311,9 +311,9 @@ func parseCompletedFilter(c *gin.Context) (*bool, bool) {
 	}
 }
 
-func parseSortParams(c *gin.Context) (string, string, bool) {
-	sortBy := c.DefaultQuery("sortBy", "createdAt")
-	sortOrder := c.DefaultQuery("sortOrder", "asc")
+func parseSortParams(c *gin.Context) (sortBy string, sortOrder string, ok bool) {
+	sortBy = c.DefaultQuery("sortBy", "createdAt")
+	sortOrder = c.DefaultQuery("sortOrder", "asc")
 
 	if sortBy != "dueDate" && sortBy != "priority" && sortBy != "createdAt" {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{

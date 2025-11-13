@@ -413,7 +413,7 @@ func TestRefreshTokenIsValid(t *testing.T) {
 			UserID:    uuid.New(),
 			Token:     "valid_token",
 			ExpiresAt: now.Add(24 * time.Hour), // Expires in the future
-			RevokedAt: nil,                      // Not revoked
+			RevokedAt: nil,                     // Not revoked
 		}
 
 		assert.True(t, token.IsValid())
@@ -451,7 +451,7 @@ func TestRefreshTokenIsValid(t *testing.T) {
 			UserID:    uuid.New(),
 			Token:     "revoked_expired_token",
 			ExpiresAt: now.Add(-1 * time.Hour), // Expired
-			RevokedAt: &revokedTime,             // And revoked
+			RevokedAt: &revokedTime,            // And revoked
 		}
 
 		assert.False(t, token.IsValid())

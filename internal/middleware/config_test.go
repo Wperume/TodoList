@@ -8,6 +8,7 @@ import (
 )
 
 func TestGetEnvBool(t *testing.T) {
+	setupTest()
 	tests := []struct {
 		name         string
 		key          string
@@ -90,6 +91,7 @@ func TestGetEnvBool(t *testing.T) {
 }
 
 func TestGetEnvInt(t *testing.T) {
+	setupTest()
 	tests := []struct {
 		name         string
 		key          string
@@ -172,6 +174,7 @@ func TestGetEnvInt(t *testing.T) {
 }
 
 func TestNewSecurityConfigFromEnv(t *testing.T) {
+	setupTest()
 	tests := []struct {
 		name                string
 		envVars             map[string]string
@@ -254,6 +257,7 @@ func TestNewSecurityConfigFromEnv(t *testing.T) {
 }
 
 func TestNewCORSConfigFromEnv(t *testing.T) {
+	setupTest()
 	tests := []struct {
 		name                    string
 		envVars                 map[string]string

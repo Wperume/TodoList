@@ -214,7 +214,7 @@ func main() {
 	}
 
 	// Check if TLS is enabled
-	tlsConf := tlsconfig.NewTLSConfigFromEnv()
+	tlsConf := tlsconfig.NewConfigFromEnv()
 
 	if tlsConf.Enabled {
 		// Run with HTTPS
@@ -248,7 +248,7 @@ func startHTTPServer(router *gin.Engine, port string, db *gorm.DB) {
 }
 
 // startHTTPSServer starts an HTTPS server with optional HTTP redirect
-func startHTTPSServer(router *gin.Engine, tlsConf *tlsconfig.TLSConfig, httpPort string, db *gorm.DB) {
+func startHTTPSServer(router *gin.Engine, tlsConf *tlsconfig.Config, httpPort string, db *gorm.DB) {
 	// Create TLS config
 	tlsConfig, err := tlsConf.CreateTLSConfig()
 	if err != nil {

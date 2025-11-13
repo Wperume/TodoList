@@ -5,6 +5,8 @@
 *.so
 *.dylib
 todolist-api
+server
+migrate
 
 # Test binary, built with `go test -c`
 *.test

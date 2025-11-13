@@ -93,7 +93,7 @@ func GlobalRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 }
 
 // createOperationRateLimiter creates a rate limiter for specific operation types
-func createOperationRateLimiter(limit int64, limitType string, message string) gin.HandlerFunc {
+func createOperationRateLimiter(limit int64, limitType, message string) gin.HandlerFunc {
 	rate := limiter.Rate{
 		Period: 1 * time.Minute,
 		Limit:  limit,

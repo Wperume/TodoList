@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -12,17 +13,22 @@ import (
 	"todolist-api/internal/logging"
 )
 
-func init() {
-	// Initialize logger for tests
-	logging.InitLogger(&logging.LogConfig{
-		Enabled:    false,
-		Level:      "info",
-		JSONFormat: false,
+var setupOnce sync.Once
+
+func setupTest() {
+	setupOnce.Do(func() {
+		// Initialize logger for tests
+		logging.InitLogger(&logging.LogConfig{
+			Enabled:    false,
+			Level:      "info",
+			JSONFormat: false,
+		})
+		gin.SetMode(gin.TestMode)
 	})
-	gin.SetMode(gin.TestMode)
 }
 
 func TestSecurityHeaders(t *testing.T) {
+	setupTest()
 	router := gin.New()
 	router.Use(SecurityHeaders())
 	router.GET("/test", func(c *gin.Context) {
@@ -47,6 +53,7 @@ func TestSecurityHeaders(t *testing.T) {
 }
 
 func TestRequestSizeLimit(t *testing.T) {
+	setupTest()
 	maxSize := int64(100) // 100 bytes
 
 	t.Run("allows requests under limit", func(t *testing.T) {
@@ -86,6 +93,7 @@ func TestRequestSizeLimit(t *testing.T) {
 }
 
 func TestValidateUUID(t *testing.T) {
+	setupTest()
 	tests := []struct {
 		name  string
 		uuid  string
@@ -111,6 +119,7 @@ func TestValidateUUID(t *testing.T) {
 }
 
 func TestUUIDValidator(t *testing.T) {
+	setupTest()
 	t.Run("accepts valid UUID", func(t *testing.T) {
 		router := gin.New()
 		router.GET("/item/:id", UUIDValidator("id"), func(c *gin.Context) {
@@ -168,6 +177,7 @@ func TestUUIDValidator(t *testing.T) {
 }
 
 func TestSanitizeValue(t *testing.T) {
+	setupTest()
 	tests := []struct {
 		name     string
 		input    interface{}
@@ -214,6 +224,7 @@ func TestSanitizeValue(t *testing.T) {
 }
 
 func TestSanitizeInput(t *testing.T) {
+	setupTest()
 	t.Run("sanitizes JSON POST request", func(t *testing.T) {
 		router := gin.New()
 		router.Use(SanitizeInput())
@@ -273,6 +284,7 @@ func TestSanitizeInput(t *testing.T) {
 }
 
 func TestErrorSanitizer(t *testing.T) {
+	setupTest()
 	t.Run("sanitizes 5xx errors", func(t *testing.T) {
 		router := gin.New()
 		router.Use(ErrorSanitizer())
@@ -308,6 +320,7 @@ func TestErrorSanitizer(t *testing.T) {
 }
 
 func TestParseTrustedProxies(t *testing.T) {
+	setupTest()
 	tests := []struct {
 		name     string
 		input    string

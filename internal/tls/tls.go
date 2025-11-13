@@ -10,32 +10,32 @@ import (
 )
 
 // TLSConfig holds TLS/HTTPS configuration
-type TLSConfig struct {
-	Enabled         bool
-	CertFile        string
-	KeyFile         string
-	Port            string
-	HTTPPort        string // Port for HTTP to HTTPS redirect
-	RedirectHTTP    bool   // Redirect HTTP to HTTPS
-	MinVersion      uint16 // Minimum TLS version
-	MaxVersion      uint16 // Maximum TLS version
-	CipherSuites    []uint16
+type Config struct {
+	Enabled                  bool
+	CertFile                 string
+	KeyFile                  string
+	Port                     string
+	HTTPPort                 string // Port for HTTP to HTTPS redirect
+	RedirectHTTP             bool   // Redirect HTTP to HTTPS
+	MinVersion               uint16 // Minimum TLS version
+	MaxVersion               uint16 // Maximum TLS version
+	CipherSuites             []uint16
 	PreferServerCipherSuites bool
 }
 
 // NewTLSConfigFromEnv creates TLS config from environment variables
-func NewTLSConfigFromEnv() *TLSConfig {
+func NewConfigFromEnv() *Config {
 	enabled := getEnvBool("TLS_ENABLED", false)
 
-	config := &TLSConfig{
-		Enabled:      enabled,
-		CertFile:     getEnv("TLS_CERT_FILE", "./certs/server.crt"),
-		KeyFile:      getEnv("TLS_KEY_FILE", "./certs/server.key"),
-		Port:         getEnv("TLS_PORT", "8443"),
-		HTTPPort:     getEnv("HTTP_PORT", "8080"),
-		RedirectHTTP: getEnvBool("TLS_REDIRECT_HTTP", true),
-		MinVersion:   parseTLSVersion(getEnv("TLS_MIN_VERSION", "1.2")),
-		MaxVersion:   parseTLSVersion(getEnv("TLS_MAX_VERSION", "1.3")),
+	config := &Config{
+		Enabled:                  enabled,
+		CertFile:                 getEnv("TLS_CERT_FILE", "./certs/server.crt"),
+		KeyFile:                  getEnv("TLS_KEY_FILE", "./certs/server.key"),
+		Port:                     getEnv("TLS_PORT", "8443"),
+		HTTPPort:                 getEnv("HTTP_PORT", "8080"),
+		RedirectHTTP:             getEnvBool("TLS_REDIRECT_HTTP", true),
+		MinVersion:               parseTLSVersion(getEnv("TLS_MIN_VERSION", "1.2")),
+		MaxVersion:               parseTLSVersion(getEnv("TLS_MAX_VERSION", "1.3")),
 		PreferServerCipherSuites: getEnvBool("TLS_PREFER_SERVER_CIPHERS", true),
 	}
 
@@ -59,7 +59,7 @@ func NewTLSConfigFromEnv() *TLSConfig {
 }
 
 // CreateTLSConfig creates a *tls.Config for the server
-func (c *TLSConfig) CreateTLSConfig() (*tls.Config, error) {
+func (c *Config) CreateTLSConfig() (*tls.Config, error) {
 	if !c.Enabled {
 		return nil, fmt.Errorf("TLS is not enabled")
 	}

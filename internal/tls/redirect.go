@@ -28,10 +28,10 @@ func HTTPSRedirectHandler(httpsPort string) http.Handler {
 		}
 
 		logging.Logger.WithFields(map[string]interface{}{
-			"client_ip":   r.RemoteAddr,
-			"http_url":    r.URL.String(),
-			"https_url":   httpsURL,
-			"method":      r.Method,
+			"client_ip": r.RemoteAddr,
+			"http_url":  r.URL.String(),
+			"https_url": httpsURL,
+			"method":    r.Method,
 		}).Debug("HTTP to HTTPS redirect")
 
 		// Redirect with 301 (Permanent) or 308 (Permanent, preserves method)

@@ -13,6 +13,7 @@ import (
 )
 
 func TestRequestLogger(t *testing.T) {
+	setupTest()
 	// Initialize logger for tests
 	logging.InitLogger(&logging.LogConfig{
 		Enabled:    false,
@@ -209,6 +210,7 @@ func TestRequestLogger(t *testing.T) {
 }
 
 func TestStructuredLogger(t *testing.T) {
+	setupTest()
 	// Initialize logger with JSON format for structured logging
 	logging.InitLogger(&logging.LogConfig{
 		Enabled:    false,
@@ -270,6 +272,7 @@ func TestStructuredLogger(t *testing.T) {
 }
 
 func TestLogLevels(t *testing.T) {
+	setupTest()
 	gin.SetMode(gin.TestMode)
 
 	testCases := []struct {

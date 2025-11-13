@@ -11,6 +11,16 @@ import (
 	"github.com/google/uuid"
 )
 
+const (
+	// Sort field constants
+	sortFieldDueDate   = "dueDate"
+	sortFieldPriority  = "priority"
+	sortFieldCreatedAt = "createdAt"
+
+	// Sort order constants
+	sortOrderDesc = "desc"
+)
+
 var (
 	ErrListNotFound      = errors.New("todo list not found")
 	ErrTodoNotFound      = errors.New("todo not found")
@@ -334,14 +344,22 @@ func (s *Storage) countTodosInList(listID uuid.UUID) int {
 // sortTodos sorts todos based on the specified field and order
 func sortTodos(todos []models.Todo, sortBy, sortOrder string) error {
 	// Validate sort field before creating the comparison function
-	if sortBy != "dueDate" && sortBy != "priority" && sortBy != "createdAt" && sortBy != "" {
+	validFields := []string{sortFieldDueDate, sortFieldPriority, sortFieldCreatedAt, ""}
+	isValid := false
+	for _, field := range validFields {
+		if sortBy == field {
+			isValid = true
+			break
+		}
+	}
+	if !isValid {
 		return ErrInvalidSortField
 	}
 
 	less := func(i, j int) bool {
 		var result bool
 		switch sortBy {
-		case "dueDate":
+		case sortFieldDueDate:
 			// Handle nil due dates (put them at the end)
 			if todos[i].DueDate == nil && todos[j].DueDate == nil {
 				result = todos[i].CreatedAt.Before(todos[j].CreatedAt)
@@ -352,18 +370,18 @@ func sortTodos(todos []models.Todo, sortBy, sortOrder string) error {
 			} else {
 				result = todos[i].DueDate.Before(*todos[j].DueDate)
 			}
-		case "priority":
+		case sortFieldPriority:
 			priorityOrder := map[models.Priority]int{
 				models.PriorityHigh:   3,
 				models.PriorityMedium: 2,
 				models.PriorityLow:    1,
 			}
 			result = priorityOrder[todos[i].Priority] > priorityOrder[todos[j].Priority]
-		case "createdAt", "":
+		case sortFieldCreatedAt, "":
 			result = todos[i].CreatedAt.Before(todos[j].CreatedAt)
 		}
 
-		if sortOrder == "desc" {
+		if sortOrder == sortOrderDesc {
 			return !result
 		}
 		return result

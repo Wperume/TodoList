@@ -12,6 +12,7 @@ import (
 )
 
 func TestNewRateLimitConfigFromEnv(t *testing.T) {
+	setupTest()
 	// Save original environment
 	origEnabled := os.Getenv("RATE_LIMIT_ENABLED")
 	origPerMin := os.Getenv("RATE_LIMIT_REQUESTS_PER_MIN")
@@ -70,6 +71,7 @@ func TestNewRateLimitConfigFromEnv(t *testing.T) {
 }
 
 func TestGlobalRateLimiter(t *testing.T) {
+	setupTest()
 	gin.SetMode(gin.TestMode)
 
 	t.Run("allows requests when disabled", func(t *testing.T) {
@@ -162,6 +164,7 @@ func TestGlobalRateLimiter(t *testing.T) {
 }
 
 func TestReadRateLimiter(t *testing.T) {
+	setupTest()
 	gin.SetMode(gin.TestMode)
 
 	t.Run("allows requests when disabled", func(t *testing.T) {
@@ -198,6 +201,7 @@ func TestReadRateLimiter(t *testing.T) {
 }
 
 func TestWriteRateLimiter(t *testing.T) {
+	setupTest()
 	gin.SetMode(gin.TestMode)
 
 	t.Run("allows requests when disabled", func(t *testing.T) {
@@ -234,6 +238,7 @@ func TestWriteRateLimiter(t *testing.T) {
 }
 
 func TestGetEnv(t *testing.T) {
+	setupTest()
 	t.Run("returns value when env var is set", func(t *testing.T) {
 		os.Setenv("TEST_VAR", "test_value")
 		defer os.Unsetenv("TEST_VAR")
@@ -259,6 +264,7 @@ func TestGetEnv(t *testing.T) {
 }
 
 func TestPerUserRateLimiter(t *testing.T) {
+	setupTest()
 	gin.SetMode(gin.TestMode)
 
 	t.Run("allows requests when disabled", func(t *testing.T) {
@@ -447,6 +453,7 @@ func TestPerUserRateLimiter(t *testing.T) {
 }
 
 func TestPerUserAuthRateLimiter(t *testing.T) {
+	setupTest()
 	gin.SetMode(gin.TestMode)
 
 	t.Run("allows requests when disabled", func(t *testing.T) {

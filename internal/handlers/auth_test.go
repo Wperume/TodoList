@@ -546,7 +546,7 @@ func TestLogout(t *testing.T) {
 	t.Run("returns error for invalid JSON", func(t *testing.T) {
 		handler, _ := setupAuthHandler(t)
 
-		req := httptest.NewRequest("POST", "/auth/logout", nil)
+		req := httptest.NewRequest("POST", "/auth/logout", http.NoBody)
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -580,7 +580,7 @@ func TestGetProfile(t *testing.T) {
 		user, err := authService.Register(regReq)
 		require.NoError(t, err)
 
-		req := httptest.NewRequest("GET", "/auth/profile", nil)
+		req := httptest.NewRequest("GET", "/auth/profile", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -604,7 +604,7 @@ func TestGetProfile(t *testing.T) {
 	t.Run("returns error when not authenticated", func(t *testing.T) {
 		handler, _ := setupAuthHandler(t)
 
-		req := httptest.NewRequest("GET", "/auth/profile", nil)
+		req := httptest.NewRequest("GET", "/auth/profile", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -625,7 +625,7 @@ func TestGetProfile(t *testing.T) {
 		handler, _ := setupAuthHandler(t)
 
 		nonExistentID := uuid.New()
-		req := httptest.NewRequest("GET", "/auth/profile", nil)
+		req := httptest.NewRequest("GET", "/auth/profile", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -754,7 +754,7 @@ func TestUpdateProfile(t *testing.T) {
 		user, err := authService.Register(regReq)
 		require.NoError(t, err)
 
-		req := httptest.NewRequest("PUT", "/auth/profile", nil)
+		req := httptest.NewRequest("PUT", "/auth/profile", http.NoBody)
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -918,7 +918,7 @@ func TestChangePassword(t *testing.T) {
 		user, err := authService.Register(regReq)
 		require.NoError(t, err)
 
-		req := httptest.NewRequest("PUT", "/auth/password", nil)
+		req := httptest.NewRequest("PUT", "/auth/password", http.NoBody)
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
