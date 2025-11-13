@@ -19,7 +19,8 @@
       "Bash(go version:*)",
       "Bash(./todolist-api:*)",
       "Bash(cat:*)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(go tool cover:*)"
     ],
     "deny": [],
     "ask": []

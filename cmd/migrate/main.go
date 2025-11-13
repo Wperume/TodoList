@@ -95,7 +95,7 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println(`Database Migration Tool
+	fmt.Print(`Database Migration Tool
 
 Usage:
   migrate <command> [arguments]

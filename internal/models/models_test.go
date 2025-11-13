@@ -270,3 +270,181 @@ func TestErrorResponse(t *testing.T) {
 	assert.NotNil(t, err.Details)
 	assert.Equal(t, "list", err.Details["resource"])
 }
+
+func TestUserBeforeCreate(t *testing.T) {
+	// Setup test database
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	assert.NoError(t, err)
+
+	// Create users table
+	err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
+		id TEXT PRIMARY KEY,
+		email TEXT UNIQUE NOT NULL,
+		password_hash TEXT NOT NULL,
+		first_name TEXT NOT NULL,
+		last_name TEXT NOT NULL,
+		role TEXT NOT NULL DEFAULT 'user',
+		is_active INTEGER DEFAULT 1,
+		last_login_at DATETIME,
+		created_at DATETIME,
+		updated_at DATETIME,
+		deleted_at DATETIME
+	)`).Error
+	assert.NoError(t, err)
+
+	t.Run("generates UUID if not set", func(t *testing.T) {
+		user := &User{
+			Email:        "test@example.com",
+			PasswordHash: "hashed_password",
+			FirstName:    "Test",
+			LastName:     "User",
+			Role:         "user",
+		}
+
+		err := db.Create(user).Error
+		assert.NoError(t, err)
+		assert.NotEqual(t, uuid.Nil, user.ID)
+	})
+
+	t.Run("preserves existing UUID", func(t *testing.T) {
+		existingID := uuid.New()
+		user := &User{
+			ID:           existingID,
+			Email:        "test2@example.com",
+			PasswordHash: "hashed_password",
+			FirstName:    "Test",
+			LastName:     "User",
+			Role:         "user",
+		}
+
+		err := db.Create(user).Error
+		assert.NoError(t, err)
+		assert.Equal(t, existingID, user.ID)
+	})
+}
+
+func TestRefreshTokenBeforeCreate(t *testing.T) {
+	// Setup test database
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	assert.NoError(t, err)
+
+	// Create users table first (for foreign key)
+	err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
+		id TEXT PRIMARY KEY,
+		email TEXT UNIQUE NOT NULL,
+		password_hash TEXT NOT NULL,
+		first_name TEXT NOT NULL,
+		last_name TEXT NOT NULL,
+		role TEXT NOT NULL DEFAULT 'user',
+		is_active INTEGER DEFAULT 1,
+		last_login_at DATETIME,
+		created_at DATETIME,
+		updated_at DATETIME,
+		deleted_at DATETIME
+	)`).Error
+	assert.NoError(t, err)
+
+	// Create refresh_tokens table
+	err = db.Exec(`CREATE TABLE IF NOT EXISTS refresh_tokens (
+		id TEXT PRIMARY KEY,
+		user_id TEXT NOT NULL,
+		token TEXT UNIQUE NOT NULL,
+		expires_at DATETIME NOT NULL,
+		created_at DATETIME,
+		revoked_at DATETIME,
+		deleted_at DATETIME,
+		FOREIGN KEY(user_id) REFERENCES users(id)
+	)`).Error
+	assert.NoError(t, err)
+
+	// Create a user first
+	user := &User{
+		Email:        "test@example.com",
+		PasswordHash: "hashed_password",
+		FirstName:    "Test",
+		LastName:     "User",
+		Role:         "user",
+	}
+	err = db.Create(user).Error
+	assert.NoError(t, err)
+
+	t.Run("generates UUID if not set", func(t *testing.T) {
+		token := &RefreshToken{
+			UserID:    user.ID,
+			Token:     "hashed_token_1",
+			ExpiresAt: time.Now().Add(24 * time.Hour),
+		}
+
+		err := db.Create(token).Error
+		assert.NoError(t, err)
+		assert.NotEqual(t, uuid.Nil, token.ID)
+	})
+
+	t.Run("preserves existing UUID", func(t *testing.T) {
+		existingID := uuid.New()
+		token := &RefreshToken{
+			ID:        existingID,
+			UserID:    user.ID,
+			Token:     "hashed_token_2",
+			ExpiresAt: time.Now().Add(24 * time.Hour),
+		}
+
+		err := db.Create(token).Error
+		assert.NoError(t, err)
+		assert.Equal(t, existingID, token.ID)
+	})
+}
+
+func TestRefreshTokenIsValid(t *testing.T) {
+	now := time.Now()
+
+	t.Run("returns true for valid token", func(t *testing.T) {
+		token := &RefreshToken{
+			ID:        uuid.New(),
+			UserID:    uuid.New(),
+			Token:     "valid_token",
+			ExpiresAt: now.Add(24 * time.Hour), // Expires in the future
+			RevokedAt: nil,                      // Not revoked
+		}
+
+		assert.True(t, token.IsValid())
+	})
+
+	t.Run("returns false for expired token", func(t *testing.T) {
+		token := &RefreshToken{
+			ID:        uuid.New(),
+			UserID:    uuid.New(),
+			Token:     "expired_token",
+			ExpiresAt: now.Add(-1 * time.Hour), // Expired in the past
+			RevokedAt: nil,
+		}
+
+		assert.False(t, token.IsValid())
+	})
+
+	t.Run("returns false for revoked token", func(t *testing.T) {
+		revokedTime := now.Add(-1 * time.Hour)
+		token := &RefreshToken{
+			ID:        uuid.New(),
+			UserID:    uuid.New(),
+			Token:     "revoked_token",
+			ExpiresAt: now.Add(24 * time.Hour), // Not expired
+			RevokedAt: &revokedTime,            // But revoked
+		}
+
+		assert.False(t, token.IsValid())
+	})
+
+	t.Run("returns false for revoked and expired token", func(t *testing.T) {
+		revokedTime := now.Add(-2 * time.Hour)
+		token := &RefreshToken{
+			ID:        uuid.New(),
+			UserID:    uuid.New(),
+			Token:     "revoked_expired_token",
+			ExpiresAt: now.Add(-1 * time.Hour), // Expired
+			RevokedAt: &revokedTime,             // And revoked
+		}
+
+		assert.False(t, token.IsValid())
+	})
+}
