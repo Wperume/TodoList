@@ -181,7 +181,12 @@ func (s *PostgresStorage) CreateTodo(userID, listID uuid.UUID, req models.Create
 }
 
 // GetTodosByList retrieves all todos in a list owned by a specific user with filtering and sorting
-func (s *PostgresStorage) GetTodosByList(userID, listID uuid.UUID, priority *models.Priority, completed *bool, sortBy, sortOrder string) ([]models.Todo, error) {
+func (s *PostgresStorage) GetTodosByList(
+	userID, listID uuid.UUID,
+	priority *models.Priority,
+	completed *bool,
+	sortBy, sortOrder string,
+) ([]models.Todo, error) {
 	// Check if list exists and belongs to user
 	var list models.TodoList
 	if err := s.db.Where("id = ? AND user_id = ?", listID, userID).First(&list).Error; err != nil {

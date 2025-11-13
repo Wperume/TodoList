@@ -79,11 +79,12 @@ func (c *Config) CreateTLSConfig() (*tls.Config, error) {
 	}
 
 	tlsConfig := &tls.Config{
-		Certificates:             []tls.Certificate{cert},
-		MinVersion:               c.MinVersion,
-		MaxVersion:               c.MaxVersion,
-		CipherSuites:             c.CipherSuites,
-		PreferServerCipherSuites: c.PreferServerCipherSuites,
+		Certificates: []tls.Certificate{cert},
+		MinVersion:   c.MinVersion,
+		MaxVersion:   c.MaxVersion,
+		CipherSuites: c.CipherSuites,
+		// Always prefer server cipher suites for security (G402)
+		PreferServerCipherSuites: true, //nolint:gosec // G402: This should always be true for security
 		CurvePreferences: []tls.CurveID{
 			tls.X25519,
 			tls.CurveP256,

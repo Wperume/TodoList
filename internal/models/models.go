@@ -122,7 +122,7 @@ type Todo struct {
 }
 
 // BeforeCreate hook to generate UUID if not set
-func (t *Todo) BeforeCreate(tx *gorm.DB) error {
+func (t *Todo) BeforeCreate(_ *gorm.DB) error {
 	if t.ID == uuid.Nil {
 		t.ID = uuid.New()
 	}

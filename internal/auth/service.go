@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	ErrUserAlreadyExists = errors.New("user with this email already exists")
-	ErrUserNotFound      = errors.New("user not found")
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrUserInactive      = errors.New("user account is inactive")
+	ErrUserAlreadyExists   = errors.New("user with this email already exists")
+	ErrUserNotFound        = errors.New("user not found")
+	ErrInvalidCredentials  = errors.New("invalid credentials")
+	ErrUserInactive        = errors.New("user account is inactive")
 	ErrRefreshTokenInvalid = errors.New("refresh token is invalid or expired")
 )
 

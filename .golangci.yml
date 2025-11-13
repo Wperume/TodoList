@@ -1,3 +1,5 @@
+version: 2
+
 linters-settings:
   dupl:
     threshold: 100
@@ -35,16 +37,12 @@ linters:
     - dogsled
     - dupl
     - errcheck
-    - exportloopref
     - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
-    - goimports
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - lll
@@ -53,12 +51,15 @@ linters:
     - prealloc
     - revive
     - staticcheck
-    - stylecheck
-    - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
 
 issues:
   exclude-dirs:
@@ -91,10 +92,3 @@ issues:
 run:
   timeout: 5m
   tests: true
-
-output:
-  formats:
-    - format: colored-line-number
-  print-issued-lines: true
-  print-linter-name: true
-  sort-results: true

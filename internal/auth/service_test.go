@@ -33,10 +33,10 @@ func setupTestDB(t *testing.T) *gorm.DB {
 func setupTestService(t *testing.T) (*Service, *gorm.DB) {
 	db := setupTestDB(t)
 	jwtConfig := &JWTConfig{
-		SecretKey:           "test-secret-key-32-characters!!",
-		AccessTokenDuration: 15 * time.Minute,
+		SecretKey:            "test-secret-key-32-characters!!",
+		AccessTokenDuration:  15 * time.Minute,
 		RefreshTokenDuration: 7 * 24 * time.Hour,
-		Issuer:              "test-todolist-api",
+		Issuer:               "test-todolist-api",
 	}
 	service := NewService(db, jwtConfig)
 	return service, db

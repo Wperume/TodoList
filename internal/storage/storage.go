@@ -214,7 +214,12 @@ func (s *Storage) CreateTodo(userID, listID uuid.UUID, req models.CreateTodoRequ
 }
 
 // GetTodosByList retrieves all todos in a list owned by a specific user with filtering and sorting
-func (s *Storage) GetTodosByList(userID, listID uuid.UUID, priority *models.Priority, completed *bool, sortBy, sortOrder string) ([]models.Todo, error) {
+func (s *Storage) GetTodosByList(
+	userID, listID uuid.UUID,
+	priority *models.Priority,
+	completed *bool,
+	sortBy, sortOrder string,
+) ([]models.Todo, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -361,13 +366,14 @@ func sortTodos(todos []models.Todo, sortBy, sortOrder string) error {
 		switch sortBy {
 		case sortFieldDueDate:
 			// Handle nil due dates (put them at the end)
-			if todos[i].DueDate == nil && todos[j].DueDate == nil {
+			switch {
+			case todos[i].DueDate == nil && todos[j].DueDate == nil:
 				result = todos[i].CreatedAt.Before(todos[j].CreatedAt)
-			} else if todos[i].DueDate == nil {
+			case todos[i].DueDate == nil:
 				result = false
-			} else if todos[j].DueDate == nil {
+			case todos[j].DueDate == nil:
 				result = true
-			} else {
+			default:
 				result = todos[i].DueDate.Before(*todos[j].DueDate)
 			}
 		case sortFieldPriority:

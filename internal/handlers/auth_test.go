@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-
 	"todolist-api/internal/auth"
 	"todolist-api/internal/models"
 	"todolist-api/internal/testutil"

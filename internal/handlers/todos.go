@@ -311,7 +311,7 @@ func parseCompletedFilter(c *gin.Context) (*bool, bool) {
 	}
 }
 
-func parseSortParams(c *gin.Context) (sortBy string, sortOrder string, ok bool) {
+func parseSortParams(c *gin.Context) (sortBy, sortOrder string, ok bool) {
 	sortBy = c.DefaultQuery("sortBy", "createdAt")
 	sortOrder = c.DefaultQuery("sortOrder", "asc")
 

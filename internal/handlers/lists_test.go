@@ -40,7 +40,7 @@ func TestGetAllLists(t *testing.T) {
 		}
 
 		// Create request
-		req := httptest.NewRequest("GET", "/lists?page=1&limit=10", nil)
+		req := httptest.NewRequest("GET", "/lists?page=1&limit=10", http.NoBody)
 		w := httptest.NewRecorder()
 
 		// Create test context
@@ -66,7 +66,7 @@ func TestGetAllLists(t *testing.T) {
 	t.Run("returns empty list when no lists exist", func(t *testing.T) {
 		handler, _ := setupListHandler()
 
-		req := httptest.NewRequest("GET", "/lists", nil)
+		req := httptest.NewRequest("GET", "/lists", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -91,7 +91,7 @@ func TestGetAllLists(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test page < 1 (should default to 1)
-		req := httptest.NewRequest("GET", "/lists?page=0&limit=10", nil)
+		req := httptest.NewRequest("GET", "/lists?page=0&limit=10", http.NoBody)
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request = req
