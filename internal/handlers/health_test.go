@@ -90,8 +90,7 @@ func TestDetailedHealth_Healthy(t *testing.T) {
 	mock.ExpectPing()
 
 	// Mock migration check - table exists query
-	mock.ExpectQuery(`SELECT EXISTS`).
-		WithArgs().
+	mock.ExpectQuery(`SELECT EXISTS \(\s+SELECT FROM information_schema\.tables\s+WHERE table_name = 'schema_migrations'\s+\)`).
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
 	// Mock migration version query - use regexp to match multiline query
@@ -135,6 +134,10 @@ func TestDetailedHealth_DatabaseUnhealthy(t *testing.T) {
 
 	// Mock database ping failure
 	mock.ExpectPing().WillReturnError(errors.New("connection refused"))
+
+	// Mock migration check - even though DB is unhealthy, migrations are still checked
+	mock.ExpectQuery(`SELECT EXISTS \(\s+SELECT FROM information_schema\.tables\s+WHERE table_name = 'schema_migrations'\s+\)`).
+		WillReturnError(errors.New("connection refused"))
 
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
