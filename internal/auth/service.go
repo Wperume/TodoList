@@ -218,7 +218,7 @@ func (s *Service) ChangePassword(userID uuid.UUID, req *models.ChangePasswordReq
 	}
 
 	// Verify current password
-	if err := VerifyPassword(req.CurrentPassword, user.PasswordHash); err != nil {
+	if verifyErr := VerifyPassword(req.CurrentPassword, user.PasswordHash); verifyErr != nil {
 		return ErrInvalidCredentials
 	}
 
@@ -234,7 +234,11 @@ func (s *Service) ChangePassword(userID uuid.UUID, req *models.ChangePasswordReq
 	}
 
 	// Revoke all existing refresh tokens for security
-	_ = s.RevokeAllUserTokens(userID)
+	// We ignore errors here as it's not critical if token revocation fails
+	if revokeErr := s.RevokeAllUserTokens(userID); revokeErr != nil {
+		// Log but don't fail password change
+		fmt.Printf("Warning: Failed to revoke user tokens: %v\n", revokeErr)
+	}
 
 	return nil
 }

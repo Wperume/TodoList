@@ -11,6 +11,10 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	statusHealthy = "healthy"
+)
+
 // HealthHandler handles health check requests
 type HealthHandler struct {
 	db        *gorm.DB
@@ -50,7 +54,7 @@ type HealthCheck struct {
 // @Router /health [get]
 func (h *HealthHandler) BasicHealth(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"status": "healthy",
+		"status": statusHealthy,
 	})
 }
 
@@ -64,12 +68,12 @@ func (h *HealthHandler) BasicHealth(c *gin.Context) {
 // @Router /health/detailed [get]
 func (h *HealthHandler) DetailedHealth(c *gin.Context) {
 	checks := make(map[string]HealthCheck)
-	overallStatus := "healthy"
+	overallStatus := statusHealthy
 
 	// Check database connectivity
 	dbCheck := h.checkDatabase()
 	checks["database"] = dbCheck
-	if dbCheck.Status != "healthy" {
+	if dbCheck.Status != statusHealthy {
 		overallStatus = "unhealthy"
 	}
 
@@ -112,7 +116,7 @@ func (h *HealthHandler) ReadinessProbe(c *gin.Context) {
 	// Check if database is accessible
 	dbCheck := h.checkDatabase()
 
-	if dbCheck.Status != "healthy" {
+	if dbCheck.Status != statusHealthy {
 		c.JSON(http.StatusServiceUnavailable, gin.H{
 			"status":  "not_ready",
 			"reason":  "database_unavailable",
@@ -175,7 +179,7 @@ func (h *HealthHandler) checkDatabase() HealthCheck {
 	stats := sqlDB.Stats()
 
 	return HealthCheck{
-		Status:  "healthy",
+		Status:  statusHealthy,
 		Message: "Database connection is healthy",
 		Details: map[string]interface{}{
 			"open_connections":    stats.OpenConnections,
@@ -230,7 +234,7 @@ func (h *HealthHandler) checkMigrations() HealthCheck {
 		}
 	}
 
-	status := "healthy"
+	status := statusHealthy
 	message := "Migrations are up to date"
 	if dirty {
 		status = "warning"

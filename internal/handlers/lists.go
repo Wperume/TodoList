@@ -28,14 +28,13 @@ func (h *ListHandler) GetAllLists(c *gin.Context) {
 	userID := middleware.GetUserIDOrDefault(c)
 
 	// Parse query parameters
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-
-	// Validate pagination parameters
-	if page < 1 {
+	page, pageErr := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if pageErr != nil || page < 1 {
 		page = 1
 	}
-	if limit < 1 || limit > 100 {
+
+	limit, limitErr := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	if limitErr != nil || limit < 1 || limit > 100 {
 		limit = 20
 	}
 
@@ -136,11 +135,11 @@ func (h *ListHandler) UpdateList(c *gin.Context) {
 	}
 
 	var req models.UpdateTodoListRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Code:    "INVALID_INPUT",
 			Message: "Invalid request body",
-			Details: map[string]interface{}{"error": err.Error()},
+			Details: map[string]interface{}{"error": bindErr.Error()},
 		})
 		return
 	}

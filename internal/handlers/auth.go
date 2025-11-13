@@ -303,11 +303,11 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	var req models.UpdateProfileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Code:    "INVALID_REQUEST",
 			Message: "Invalid request payload",
-			Details: map[string]interface{}{"error": err.Error()},
+			Details: map[string]interface{}{"error": bindErr.Error()},
 		})
 		return
 	}
@@ -361,20 +361,20 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	}
 
 	var req models.ChangePasswordRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if bindErr := c.ShouldBindJSON(&req); bindErr != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Code:    "INVALID_REQUEST",
 			Message: "Invalid request payload",
-			Details: map[string]interface{}{"error": err.Error()},
+			Details: map[string]interface{}{"error": bindErr.Error()},
 		})
 		return
 	}
 
 	// Validate new password requirements
-	if err := auth.ValidatePasswordRequirements(req.NewPassword); err != nil {
+	if validateErr := auth.ValidatePasswordRequirements(req.NewPassword); validateErr != nil {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Code:    "INVALID_PASSWORD",
-			Message: err.Error(),
+			Message: validateErr.Error(),
 		})
 		return
 	}
