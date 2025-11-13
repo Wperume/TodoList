@@ -50,7 +50,7 @@ jobs:
     - name: Run go vet
       run: go vet ./...
 
-    - name: Run tests
+    - name: Run tests with race detection
       env:
         DB_HOST: localhost
         DB_PORT: 5432
@@ -58,7 +58,17 @@ jobs:
         DB_PASSWORD: todopassword
         DB_NAME: todolist
         DB_SSLMODE: disable
-      run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+      run: go test -v -race ./...
+
+    - name: Run tests with coverage
+      env:
+        DB_HOST: localhost
+        DB_PORT: 5432
+        DB_USER: todouser
+        DB_PASSWORD: todopassword
+        DB_NAME: todolist
+        DB_SSLMODE: disable
+      run: go test -v -coverprofile=coverage.txt -covermode=atomic ./...
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
