@@ -9,9 +9,10 @@ import (
 	"strconv"
 	"time"
 
+	"todolist-api/internal/models"
+
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	"todolist-api/internal/models"
 )
 
 var (

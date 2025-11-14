@@ -4,10 +4,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"todolist-api/internal/auth"
 	"todolist-api/internal/models"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 const (

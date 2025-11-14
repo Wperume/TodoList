@@ -5,11 +5,12 @@ import (
 	"strconv"
 	"time"
 
+	"todolist-api/internal/logging"
+
 	"github.com/gin-gonic/gin"
 	"github.com/ulule/limiter/v3"
 	mgin "github.com/ulule/limiter/v3/drivers/middleware/gin"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
-	"todolist-api/internal/logging"
 )
 
 // RateLimitConfig holds rate limiting configuration
@@ -73,16 +74,16 @@ func GlobalRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 	middleware := mgin.NewMiddleware(instance, mgin.WithLimitReachedHandler(func(c *gin.Context) {
 		// Log rate limit violation with client details
 		logging.Logger.WithFields(map[string]interface{}{
-			"client_ip":       c.ClientIP(),
-			"path":            c.Request.URL.Path,
-			"method":          c.Request.Method,
-			"rate_limited":    true,
-			"limit_per_min":   config.RequestsPerMin,
+			"client_ip":     c.ClientIP(),
+			"path":          c.Request.URL.Path,
+			"method":        c.Request.Method,
+			"rate_limited":  true,
+			"limit_per_min": config.RequestsPerMin,
 		}).Warn("Rate limit exceeded")
 
 		c.JSON(http.StatusTooManyRequests, gin.H{
-			"code":    "RATE_LIMIT_EXCEEDED",
-			"message": "Too many requests. Please try again later.",
+			"code":       "RATE_LIMIT_EXCEEDED",
+			"message":    "Too many requests. Please try again later.",
 			"retryAfter": int(rate.Period.Seconds()),
 		})
 		c.Abort()
@@ -206,13 +207,13 @@ func PerUserRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 
 			// Log rate limit violation
 			logging.Logger.WithFields(map[string]interface{}{
-				"limit_type":      limitType,
-				"identifier":      identifier,
-				"client_ip":       c.ClientIP(),
-				"path":            c.Request.URL.Path,
-				"method":          c.Request.Method,
-				"rate_limited":    true,
-				"limit_per_min":   config.RequestsPerMin,
+				"limit_type":    limitType,
+				"identifier":    identifier,
+				"client_ip":     c.ClientIP(),
+				"path":          c.Request.URL.Path,
+				"method":        c.Request.Method,
+				"rate_limited":  true,
+				"limit_per_min": config.RequestsPerMin,
 			}).Warn("Per-user rate limit exceeded")
 
 			c.JSON(http.StatusTooManyRequests, gin.H{
@@ -257,13 +258,13 @@ func PerUserAuthRateLimiter(config *RateLimitConfig) gin.HandlerFunc {
 		mgin.WithKeyGetter(keyGetter),
 		mgin.WithLimitReachedHandler(func(c *gin.Context) {
 			logging.Logger.WithFields(map[string]interface{}{
-				"client_ip":       c.ClientIP(),
-				"path":            c.Request.URL.Path,
-				"method":          c.Request.Method,
-				"rate_limited":    true,
-				"limit_type":      "auth",
-				"limit":           rate.Limit,
-				"period_minutes":  int(rate.Period.Minutes()),
+				"client_ip":      c.ClientIP(),
+				"path":           c.Request.URL.Path,
+				"method":         c.Request.Method,
+				"rate_limited":   true,
+				"limit_type":     "auth",
+				"limit":          rate.Limit,
+				"period_minutes": int(rate.Period.Minutes()),
 			}).Warn("Authentication rate limit exceeded")
 
 			c.JSON(http.StatusTooManyRequests, gin.H{

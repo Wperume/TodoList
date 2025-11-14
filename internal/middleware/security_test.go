@@ -8,9 +8,10 @@ import (
 	"sync"
 	"testing"
 
+	"todolist-api/internal/logging"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"todolist-api/internal/logging"
 )
 
 var setupOnce sync.Once
@@ -35,7 +36,7 @@ func TestSecurityHeaders(t *testing.T) {
 		c.JSON(http.StatusOK, gin.H{"message": "success"})
 	})
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest("GET", "/test", http.NoBody)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 
@@ -126,7 +127,7 @@ func TestUUIDValidator(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"id": c.Param("id")})
 		})
 
-		req := httptest.NewRequest("GET", "/item/550e8400-e29b-41d4-a716-446655440000", nil)
+		req := httptest.NewRequest("GET", "/item/550e8400-e29b-41d4-a716-446655440000", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -139,7 +140,7 @@ func TestUUIDValidator(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"id": c.Param("id")})
 		})
 
-		req := httptest.NewRequest("GET", "/item/not-a-uuid", nil)
+		req := httptest.NewRequest("GET", "/item/not-a-uuid", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -157,19 +158,19 @@ func TestUUIDValidator(t *testing.T) {
 		})
 
 		// Both valid
-		req := httptest.NewRequest("GET", "/list/550e8400-e29b-41d4-a716-446655440000/item/6ba7b810-9dad-11d1-80b4-00c04fd430c8", nil)
+		req := httptest.NewRequest("GET", "/list/550e8400-e29b-41d4-a716-446655440000/item/6ba7b810-9dad-11d1-80b4-00c04fd430c8", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 
 		// First invalid
-		req = httptest.NewRequest("GET", "/list/invalid/item/6ba7b810-9dad-11d1-80b4-00c04fd430c8", nil)
+		req = httptest.NewRequest("GET", "/list/invalid/item/6ba7b810-9dad-11d1-80b4-00c04fd430c8", http.NoBody)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
 
 		// Second invalid
-		req = httptest.NewRequest("GET", "/list/550e8400-e29b-41d4-a716-446655440000/item/invalid", nil)
+		req = httptest.NewRequest("GET", "/list/550e8400-e29b-41d4-a716-446655440000/item/invalid", http.NoBody)
 		w = httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -275,7 +276,7 @@ func TestSanitizeInput(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -293,7 +294,7 @@ func TestErrorSanitizer(t *testing.T) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "database connection failed"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -310,7 +311,7 @@ func TestErrorSanitizer(t *testing.T) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "validation error"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 

@@ -87,7 +87,7 @@ func TestGlobalRateLimiter(t *testing.T) {
 
 		// Make multiple requests - all should succeed since rate limiting is disabled
 		for i := 0; i < 100; i++ {
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest("GET", "/test", http.NoBody)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 			assert.Equal(t, http.StatusOK, w.Code, "Request %d should succeed when rate limiting is disabled", i+1)
@@ -111,7 +111,7 @@ func TestGlobalRateLimiter(t *testing.T) {
 
 		// Make more requests than the limit
 		for i := 0; i < 10; i++ {
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest("GET", "/test", http.NoBody)
 			req.RemoteAddr = "192.168.1.1:12345" // Same IP for all requests
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
@@ -142,14 +142,14 @@ func TestGlobalRateLimiter(t *testing.T) {
 		})
 
 		// First request should succeed
-		req1 := httptest.NewRequest("GET", "/test", nil)
+		req1 := httptest.NewRequest("GET", "/test", http.NoBody)
 		req1.RemoteAddr = "192.168.1.2:12345"
 		w1 := httptest.NewRecorder()
 		router.ServeHTTP(w1, req1)
 		assert.Equal(t, http.StatusOK, w1.Code)
 
 		// Second request from same IP should be rate limited
-		req2 := httptest.NewRequest("GET", "/test", nil)
+		req2 := httptest.NewRequest("GET", "/test", http.NoBody)
 		req2.RemoteAddr = "192.168.1.2:12345"
 		w2 := httptest.NewRecorder()
 		router.ServeHTTP(w2, req2)
@@ -181,7 +181,7 @@ func TestReadRateLimiter(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -218,7 +218,7 @@ func TestWriteRateLimiter(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("POST", "/test", nil)
+		req := httptest.NewRequest("POST", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -280,7 +280,7 @@ func TestPerUserRateLimiter(t *testing.T) {
 
 		// Make multiple requests - all should succeed since rate limiting is disabled
 		for i := 0; i < 100; i++ {
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest("GET", "/test", http.NoBody)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 			assert.Equal(t, http.StatusOK, w.Code, "Request %d should succeed when rate limiting is disabled", i+1)
@@ -306,7 +306,7 @@ func TestPerUserRateLimiter(t *testing.T) {
 
 		// Make more requests than the limit from the same user
 		for i := 0; i < 10; i++ {
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest("GET", "/test", http.NoBody)
 			req.RemoteAddr = "192.168.1.1:12345"
 
 			// Create a new context and set user_id before the middleware runs
@@ -353,7 +353,7 @@ func TestPerUserRateLimiter(t *testing.T) {
 		// User 1 makes requests
 		user1Success := 0
 		for i := 0; i < 5; i++ {
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest("GET", "/test", http.NoBody)
 			req.Header.Set("X-User-ID", "user-1")
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
@@ -365,7 +365,7 @@ func TestPerUserRateLimiter(t *testing.T) {
 		// User 2 makes requests - should have their own limit
 		user2Success := 0
 		for i := 0; i < 5; i++ {
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest("GET", "/test", http.NoBody)
 			req.Header.Set("X-User-ID", "user-2")
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
@@ -398,7 +398,7 @@ func TestPerUserRateLimiter(t *testing.T) {
 
 		// Make requests without user_id (unauthenticated)
 		for i := 0; i < 6; i++ {
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest("GET", "/test", http.NoBody)
 			req.RemoteAddr = "192.168.1.100:12345" // Same IP
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
@@ -432,13 +432,13 @@ func TestPerUserRateLimiter(t *testing.T) {
 		})
 
 		// First request should succeed
-		req1 := httptest.NewRequest("GET", "/test", nil)
+		req1 := httptest.NewRequest("GET", "/test", http.NoBody)
 		w1 := httptest.NewRecorder()
 		router.ServeHTTP(w1, req1)
 		assert.Equal(t, http.StatusOK, w1.Code)
 
 		// Second request should be rate limited
-		req2 := httptest.NewRequest("GET", "/test", nil)
+		req2 := httptest.NewRequest("GET", "/test", http.NoBody)
 		w2 := httptest.NewRecorder()
 		router.ServeHTTP(w2, req2)
 
@@ -469,7 +469,7 @@ func TestPerUserAuthRateLimiter(t *testing.T) {
 
 		// Make multiple requests - all should succeed
 		for i := 0; i < 20; i++ {
-			req := httptest.NewRequest("POST", "/auth/login", nil)
+			req := httptest.NewRequest("POST", "/auth/login", http.NoBody)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 			assert.Equal(t, http.StatusOK, w.Code)
@@ -493,7 +493,7 @@ func TestPerUserAuthRateLimiter(t *testing.T) {
 
 		// Make more than 5 attempts from same IP
 		for i := 0; i < 10; i++ {
-			req := httptest.NewRequest("POST", "/auth/login", nil)
+			req := httptest.NewRequest("POST", "/auth/login", http.NoBody)
 			req.RemoteAddr = "192.168.1.50:12345"
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
@@ -524,7 +524,7 @@ func TestPerUserAuthRateLimiter(t *testing.T) {
 		// IP 1 makes requests
 		ip1Success := 0
 		for i := 0; i < 7; i++ {
-			req := httptest.NewRequest("POST", "/auth/login", nil)
+			req := httptest.NewRequest("POST", "/auth/login", http.NoBody)
 			req.RemoteAddr = "192.168.1.10:12345"
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
@@ -536,7 +536,7 @@ func TestPerUserAuthRateLimiter(t *testing.T) {
 		// IP 2 makes requests - should have their own limit
 		ip2Success := 0
 		for i := 0; i < 7; i++ {
-			req := httptest.NewRequest("POST", "/auth/login", nil)
+			req := httptest.NewRequest("POST", "/auth/login", http.NoBody)
 			req.RemoteAddr = "192.168.1.20:12345"
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
@@ -565,7 +565,7 @@ func TestPerUserAuthRateLimiter(t *testing.T) {
 
 		// Make 5 successful requests
 		for i := 0; i < 5; i++ {
-			req := httptest.NewRequest("POST", "/auth/login", nil)
+			req := httptest.NewRequest("POST", "/auth/login", http.NoBody)
 			req.RemoteAddr = "192.168.1.200:12345"
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
@@ -573,7 +573,7 @@ func TestPerUserAuthRateLimiter(t *testing.T) {
 		}
 
 		// 6th request should be rate limited
-		req := httptest.NewRequest("POST", "/auth/login", nil)
+		req := httptest.NewRequest("POST", "/auth/login", http.NoBody)
 		req.RemoteAddr = "192.168.1.200:12345"
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)

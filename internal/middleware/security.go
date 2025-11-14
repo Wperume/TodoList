@@ -5,15 +5,16 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"todolist-api/internal/logging"
+
+	"github.com/gin-gonic/gin"
 )
 
 // SecurityConfig holds security middleware configuration
 type SecurityConfig struct {
-	MaxRequestBodySize int64  // Maximum request body size in bytes
-	EnableXSSProtection bool  // Enable XSS input sanitization
-	TrustedProxies     []string // List of trusted proxy IPs
+	MaxRequestBodySize  int64    // Maximum request body size in bytes
+	EnableXSSProtection bool     // Enable XSS input sanitization
+	TrustedProxies      []string // List of trusted proxy IPs
 }
 
 // NewSecurityConfigFromEnv creates security config from environment variables
@@ -85,8 +86,8 @@ func RequestSizeLimit(maxSize int64) gin.HandlerFunc {
 			}).Warn("Request body too large")
 
 			c.JSON(http.StatusRequestEntityTooLarge, gin.H{
-				"code":    "REQUEST_TOO_LARGE",
-				"message": "Request body too large",
+				"code":           "REQUEST_TOO_LARGE",
+				"message":        "Request body too large",
 				"max_size_bytes": maxSize,
 			})
 			c.Abort()
@@ -203,7 +204,7 @@ func ValidateUUID(uuidStr string) bool {
 	}
 
 	if len(parts[0]) != 8 || len(parts[1]) != 4 || len(parts[2]) != 4 ||
-	   len(parts[3]) != 4 || len(parts[4]) != 12 {
+		len(parts[3]) != 4 || len(parts[4]) != 12 {
 		return false
 	}
 
@@ -225,10 +226,10 @@ func UUIDValidator(params ...string) gin.HandlerFunc {
 			uuidStr := c.Param(param)
 			if uuidStr != "" && !ValidateUUID(uuidStr) {
 				logging.Logger.WithFields(map[string]interface{}{
-					"client_ip":  c.ClientIP(),
-					"path":       c.Request.URL.Path,
-					"param":      param,
-					"value":      uuidStr,
+					"client_ip": c.ClientIP(),
+					"path":      c.Request.URL.Path,
+					"param":     param,
+					"value":     uuidStr,
 				}).Warn("Invalid UUID format")
 
 				c.JSON(http.StatusBadRequest, gin.H{

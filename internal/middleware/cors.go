@@ -4,8 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"todolist-api/internal/logging"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CORSConfig holds CORS configuration

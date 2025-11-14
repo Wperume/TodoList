@@ -27,7 +27,7 @@ func TestCORS(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		req.Header.Set("Origin", "https://example.com")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -50,7 +50,7 @@ func TestCORS(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		req.Header.Set("Origin", "https://example.com")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -73,7 +73,7 @@ func TestCORS(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		req.Header.Set("Origin", "https://evil.com")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -97,7 +97,7 @@ func TestCORS(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "should not reach here"})
 		})
 
-		req := httptest.NewRequest("OPTIONS", "/test", nil)
+		req := httptest.NewRequest("OPTIONS", "/test", http.NoBody)
 		req.Header.Set("Origin", "https://example.com")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -123,7 +123,7 @@ func TestCORS(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		req.Header.Set("Origin", "https://example.com")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -147,7 +147,7 @@ func TestCORS(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		req.Header.Set("Origin", "https://example.com")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -167,7 +167,7 @@ func TestCORS(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		req.Header.Set("Origin", "https://example.com")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)

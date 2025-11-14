@@ -3,9 +3,10 @@ package middleware
 import (
 	"time"
 
+	"todolist-api/internal/logging"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"todolist-api/internal/logging"
 )
 
 // RequestLogger is a middleware that logs HTTP requests with detailed information
@@ -51,8 +52,8 @@ func RequestLogger() gin.HandlerFunc {
 
 		// Add response fields
 		logEntry = logEntry.WithFields(logrus.Fields{
-			"status":       statusCode,
-			"latency_ms":   latency.Milliseconds(),
+			"status":        statusCode,
+			"latency_ms":    latency.Milliseconds(),
 			"response_size": c.Writer.Size(),
 		})
 

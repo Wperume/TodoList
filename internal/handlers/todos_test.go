@@ -51,7 +51,7 @@ func TestGetTodosByList(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create request
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -91,7 +91,7 @@ func TestGetTodosByList(t *testing.T) {
 		require.NoError(t, err)
 
 		// Filter for high priority
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?priority=high", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?priority=high", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -114,8 +114,8 @@ func TestGetTodosByList(t *testing.T) {
 
 		// Create completed todo
 		completedTodo, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Completed Todo",
-			Priority: models.PriorityMedium,
+			Description: "Completed Todo",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 
@@ -128,13 +128,13 @@ func TestGetTodosByList(t *testing.T) {
 
 		// Create incomplete todo
 		_, err = store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Incomplete Todo",
-			Priority: models.PriorityLow,
+			Description: "Incomplete Todo",
+			Priority:    models.PriorityLow,
 		})
 		require.NoError(t, err)
 
 		// Filter for completed
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?completed=true", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?completed=true", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -159,8 +159,8 @@ func TestGetTodosByList(t *testing.T) {
 
 		// Create completed todo
 		completedTodo, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Completed Todo",
-			Priority: models.PriorityMedium,
+			Description: "Completed Todo",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 
@@ -171,13 +171,13 @@ func TestGetTodosByList(t *testing.T) {
 
 		// Create incomplete todo
 		_, err = store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Incomplete Todo",
-			Priority: models.PriorityLow,
+			Description: "Incomplete Todo",
+			Priority:    models.PriorityLow,
 		})
 		require.NoError(t, err)
 
 		// Filter for incomplete
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?completed=false", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?completed=false", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -201,20 +201,20 @@ func TestGetTodosByList(t *testing.T) {
 
 		// Create todos with slight delays
 		todo1, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "First Todo",
-			Priority: models.PriorityMedium,
+			Description: "First Todo",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 		time.Sleep(10 * time.Millisecond)
 
 		todo2, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Second Todo",
-			Priority: models.PriorityMedium,
+			Description: "Second Todo",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 
 		// Sort by createdAt asc (default)
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?sortBy=createdAt&sortOrder=asc", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?sortBy=createdAt&sortOrder=asc", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -238,20 +238,20 @@ func TestGetTodosByList(t *testing.T) {
 
 		// Create todos
 		todo1, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "First Todo",
-			Priority: models.PriorityMedium,
+			Description: "First Todo",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 		time.Sleep(10 * time.Millisecond)
 
 		todo2, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Second Todo",
-			Priority: models.PriorityMedium,
+			Description: "Second Todo",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 
 		// Sort by createdAt desc
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?sortBy=createdAt&sortOrder=desc", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?sortBy=createdAt&sortOrder=desc", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -275,25 +275,25 @@ func TestGetTodosByList(t *testing.T) {
 
 		// Create todos with different priorities
 		_, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Medium Priority",
-			Priority: models.PriorityMedium,
+			Description: "Medium Priority",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 
 		_, err = store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "High Priority",
-			Priority: models.PriorityHigh,
+			Description: "High Priority",
+			Priority:    models.PriorityHigh,
 		})
 		require.NoError(t, err)
 
 		_, err = store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Low Priority",
-			Priority: models.PriorityLow,
+			Description: "Low Priority",
+			Priority:    models.PriorityLow,
 		})
 		require.NoError(t, err)
 
 		// Sort by priority asc
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?sortBy=priority&sortOrder=asc", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?sortBy=priority&sortOrder=asc", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -316,7 +316,7 @@ func TestGetTodosByList(t *testing.T) {
 	t.Run("returns empty list when no todos exist", func(t *testing.T) {
 		handler, _, listID := setupTodoHandler()
 
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -336,7 +336,7 @@ func TestGetTodosByList(t *testing.T) {
 	t.Run("returns error for invalid list ID format", func(t *testing.T) {
 		handler, _, _ := setupTodoHandler()
 
-		req := httptest.NewRequest("GET", "/lists/invalid-uuid/todos", nil)
+		req := httptest.NewRequest("GET", "/lists/invalid-uuid/todos", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -357,7 +357,7 @@ func TestGetTodosByList(t *testing.T) {
 		handler, _, _ := setupTodoHandler()
 
 		nonExistentID := uuid.New()
-		req := httptest.NewRequest("GET", "/lists/"+nonExistentID.String()+"/todos", nil)
+		req := httptest.NewRequest("GET", "/lists/"+nonExistentID.String()+"/todos", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -377,7 +377,7 @@ func TestGetTodosByList(t *testing.T) {
 	t.Run("returns error for invalid priority", func(t *testing.T) {
 		handler, _, listID := setupTodoHandler()
 
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?priority=invalid", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?priority=invalid", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -397,7 +397,7 @@ func TestGetTodosByList(t *testing.T) {
 	t.Run("returns error for invalid completed value", func(t *testing.T) {
 		handler, _, listID := setupTodoHandler()
 
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?completed=invalid", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?completed=invalid", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -417,7 +417,7 @@ func TestGetTodosByList(t *testing.T) {
 	t.Run("returns error for invalid sortBy value", func(t *testing.T) {
 		handler, _, listID := setupTodoHandler()
 
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?sortBy=invalid", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?sortBy=invalid", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -437,7 +437,7 @@ func TestGetTodosByList(t *testing.T) {
 	t.Run("returns error for invalid sortOrder value", func(t *testing.T) {
 		handler, _, listID := setupTodoHandler()
 
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?sortOrder=invalid", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos?sortOrder=invalid", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -494,8 +494,8 @@ func TestCreateTodo(t *testing.T) {
 		handler, _, listID := setupTodoHandler()
 
 		reqBody := models.CreateTodoRequest{
-			Description:    "Minimal Todo",
-			Priority: models.PriorityMedium,
+			Description: "Minimal Todo",
+			Priority:    models.PriorityMedium,
 		}
 
 		req := testutil.MakeJSONRequest(t, "POST", "/lists/"+listID.String()+"/todos", reqBody)
@@ -520,7 +520,7 @@ func TestCreateTodo(t *testing.T) {
 	t.Run("returns error for invalid JSON", func(t *testing.T) {
 		handler, _, listID := setupTodoHandler()
 
-		req := httptest.NewRequest("POST", "/lists/"+listID.String()+"/todos", nil)
+		req := httptest.NewRequest("POST", "/lists/"+listID.String()+"/todos", http.NoBody)
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -567,8 +567,8 @@ func TestCreateTodo(t *testing.T) {
 
 		nonExistentID := uuid.New()
 		reqBody := models.CreateTodoRequest{
-			Description:    "Todo",
-			Priority: models.PriorityMedium,
+			Description: "Todo",
+			Priority:    models.PriorityMedium,
 		}
 
 		req := testutil.MakeJSONRequest(t, "POST", "/lists/"+nonExistentID.String()+"/todos", reqBody)
@@ -592,8 +592,8 @@ func TestCreateTodo(t *testing.T) {
 		handler, _, _ := setupTodoHandler()
 
 		reqBody := models.CreateTodoRequest{
-			Description:    "Todo",
-			Priority: models.PriorityMedium,
+			Description: "Todo",
+			Priority:    models.PriorityMedium,
 		}
 
 		req := testutil.MakeJSONRequest(t, "POST", "/lists/invalid-uuid/todos", reqBody)
@@ -626,7 +626,7 @@ func TestGetTodoByID(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos/"+created.ID.String(), nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos/"+created.ID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -651,7 +651,7 @@ func TestGetTodoByID(t *testing.T) {
 		handler, _, listID := setupTodoHandler()
 
 		nonExistentID := uuid.New()
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos/"+nonExistentID.String(), nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos/"+nonExistentID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -677,7 +677,7 @@ func TestGetTodoByID(t *testing.T) {
 		nonExistentListID := uuid.New()
 		todoID := uuid.New()
 
-		req := httptest.NewRequest("GET", "/lists/"+nonExistentListID.String()+"/todos/"+todoID.String(), nil)
+		req := httptest.NewRequest("GET", "/lists/"+nonExistentListID.String()+"/todos/"+todoID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -700,7 +700,7 @@ func TestGetTodoByID(t *testing.T) {
 	t.Run("returns error for invalid todo ID format", func(t *testing.T) {
 		handler, _, listID := setupTodoHandler()
 
-		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos/invalid-uuid", nil)
+		req := httptest.NewRequest("GET", "/lists/"+listID.String()+"/todos/invalid-uuid", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -724,7 +724,7 @@ func TestGetTodoByID(t *testing.T) {
 		handler, _, _ := setupTodoHandler()
 
 		todoID := uuid.New()
-		req := httptest.NewRequest("GET", "/lists/invalid-uuid/todos/"+todoID.String(), nil)
+		req := httptest.NewRequest("GET", "/lists/invalid-uuid/todos/"+todoID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -752,8 +752,8 @@ func TestUpdateTodo(t *testing.T) {
 		handler, store, listID := setupTodoHandler()
 
 		created, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Original Title",
-			Priority: models.PriorityMedium,
+			Description: "Original Title",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 
@@ -785,8 +785,8 @@ func TestUpdateTodo(t *testing.T) {
 		handler, store, listID := setupTodoHandler()
 
 		created, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Todo to Complete",
-			Priority: models.PriorityMedium,
+			Description: "Todo to Complete",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 
@@ -820,8 +820,8 @@ func TestUpdateTodo(t *testing.T) {
 
 		// Create and mark as completed
 		created, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Completed Todo",
-			Priority: models.PriorityMedium,
+			Description: "Completed Todo",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 
@@ -860,8 +860,8 @@ func TestUpdateTodo(t *testing.T) {
 		handler, store, listID := setupTodoHandler()
 
 		created, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Original Todo",
-			Priority: models.PriorityLow,
+			Description: "Original Todo",
+			Priority:    models.PriorityLow,
 		})
 		require.NoError(t, err)
 
@@ -952,12 +952,12 @@ func TestUpdateTodo(t *testing.T) {
 		handler, store, listID := setupTodoHandler()
 
 		created, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Todo",
-			Priority: models.PriorityMedium,
+			Description: "Todo",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 
-		req := httptest.NewRequest("PUT", "/lists/"+listID.String()+"/todos/"+created.ID.String(), nil)
+		req := httptest.NewRequest("PUT", "/lists/"+listID.String()+"/todos/"+created.ID.String(), http.NoBody)
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -1041,12 +1041,12 @@ func TestDeleteTodo(t *testing.T) {
 		handler, store, listID := setupTodoHandler()
 
 		created, err := store.CreateTodo(testUserID, listID, models.CreateTodoRequest{
-			Description:    "Todo to Delete",
-			Priority: models.PriorityMedium,
+			Description: "Todo to Delete",
+			Priority:    models.PriorityMedium,
 		})
 		require.NoError(t, err)
 
-		req := httptest.NewRequest("DELETE", "/lists/"+listID.String()+"/todos/"+created.ID.String(), nil)
+		req := httptest.NewRequest("DELETE", "/lists/"+listID.String()+"/todos/"+created.ID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -1070,7 +1070,7 @@ func TestDeleteTodo(t *testing.T) {
 		handler, _, listID := setupTodoHandler()
 
 		nonExistentID := uuid.New()
-		req := httptest.NewRequest("DELETE", "/lists/"+listID.String()+"/todos/"+nonExistentID.String(), nil)
+		req := httptest.NewRequest("DELETE", "/lists/"+listID.String()+"/todos/"+nonExistentID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -1096,7 +1096,7 @@ func TestDeleteTodo(t *testing.T) {
 		nonExistentListID := uuid.New()
 		todoID := uuid.New()
 
-		req := httptest.NewRequest("DELETE", "/lists/"+nonExistentListID.String()+"/todos/"+todoID.String(), nil)
+		req := httptest.NewRequest("DELETE", "/lists/"+nonExistentListID.String()+"/todos/"+todoID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -1119,7 +1119,7 @@ func TestDeleteTodo(t *testing.T) {
 	t.Run("returns error for invalid todo ID format", func(t *testing.T) {
 		handler, _, listID := setupTodoHandler()
 
-		req := httptest.NewRequest("DELETE", "/lists/"+listID.String()+"/todos/invalid-uuid", nil)
+		req := httptest.NewRequest("DELETE", "/lists/"+listID.String()+"/todos/invalid-uuid", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -1143,7 +1143,7 @@ func TestDeleteTodo(t *testing.T) {
 		handler, _, _ := setupTodoHandler()
 
 		todoID := uuid.New()
-		req := httptest.NewRequest("DELETE", "/lists/invalid-uuid/todos/"+todoID.String(), nil)
+		req := httptest.NewRequest("DELETE", "/lists/invalid-uuid/todos/"+todoID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)

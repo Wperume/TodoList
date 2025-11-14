@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"time"
 
+	"todolist-api/internal/models"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
-	"todolist-api/internal/models"
 )
 
 var (

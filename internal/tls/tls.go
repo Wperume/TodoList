@@ -78,13 +78,12 @@ func (c *Config) CreateTLSConfig() (*tls.Config, error) {
 		return nil, fmt.Errorf("failed to load certificate: %w", err)
 	}
 
-	tlsConfig := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   c.MinVersion,
-		MaxVersion:   c.MaxVersion,
-		CipherSuites: c.CipherSuites,
-		// Always prefer server cipher suites for security (G402)
-		PreferServerCipherSuites: true, //nolint:gosec // G402: This should always be true for security
+	tlsConfig := &tls.Config{ //nolint:gosec // G402: MinVersion is configurable via env vars with secure defaults
+		Certificates:             []tls.Certificate{cert},
+		MinVersion:               c.MinVersion,
+		MaxVersion:               c.MaxVersion,
+		CipherSuites:             c.CipherSuites,
+		PreferServerCipherSuites: true,
 		CurvePreferences: []tls.CurveID{
 			tls.X25519,
 			tls.CurveP256,

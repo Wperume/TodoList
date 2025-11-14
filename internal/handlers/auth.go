@@ -4,10 +4,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"todolist-api/internal/auth"
 	"todolist-api/internal/middleware"
 	"todolist-api/internal/models"
+
+	"github.com/gin-gonic/gin"
 )
 
 // AuthHandler handles authentication-related requests

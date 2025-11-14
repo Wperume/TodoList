@@ -176,18 +176,18 @@ func TestGetEnvInt(t *testing.T) {
 func TestNewSecurityConfigFromEnv(t *testing.T) {
 	setupTest()
 	tests := []struct {
-		name                string
-		envVars             map[string]string
-		expectedMaxSize     int64
-		expectedXSS         bool
-		expectedProxyCount  int
+		name               string
+		envVars            map[string]string
+		expectedMaxSize    int64
+		expectedXSS        bool
+		expectedProxyCount int
 	}{
 		{
-			name:                "returns default values when no env vars set",
-			envVars:             map[string]string{},
-			expectedMaxSize:     1048576, // 1MB
-			expectedXSS:         true,
-			expectedProxyCount:  0,
+			name:               "returns default values when no env vars set",
+			envVars:            map[string]string{},
+			expectedMaxSize:    1048576, // 1MB
+			expectedXSS:        true,
+			expectedProxyCount: 0,
 		},
 		{
 			name: "returns custom values from env vars",
@@ -196,36 +196,36 @@ func TestNewSecurityConfigFromEnv(t *testing.T) {
 				"ENABLE_XSS_PROTECTION": "false",
 				"TRUSTED_PROXIES":       "10.0.0.1,192.168.1.1",
 			},
-			expectedMaxSize:     2097152, // 2MB
-			expectedXSS:         false,
-			expectedProxyCount:  2,
+			expectedMaxSize:    2097152, // 2MB
+			expectedXSS:        false,
+			expectedProxyCount: 2,
 		},
 		{
 			name: "handles single trusted proxy",
 			envVars: map[string]string{
 				"TRUSTED_PROXIES": "10.0.0.1",
 			},
-			expectedMaxSize:     1048576,
-			expectedXSS:         true,
-			expectedProxyCount:  1,
+			expectedMaxSize:    1048576,
+			expectedXSS:        true,
+			expectedProxyCount: 1,
 		},
 		{
 			name: "trims whitespace from trusted proxies",
 			envVars: map[string]string{
 				"TRUSTED_PROXIES": " 10.0.0.1 , 192.168.1.1 , 172.16.0.1 ",
 			},
-			expectedMaxSize:     1048576,
-			expectedXSS:         true,
-			expectedProxyCount:  3,
+			expectedMaxSize:    1048576,
+			expectedXSS:        true,
+			expectedProxyCount: 3,
 		},
 		{
 			name: "enables XSS protection by default",
 			envVars: map[string]string{
 				"MAX_REQUEST_BODY_SIZE": "512000",
 			},
-			expectedMaxSize:     512000,
-			expectedXSS:         true,
-			expectedProxyCount:  0,
+			expectedMaxSize:    512000,
+			expectedXSS:        true,
+			expectedProxyCount: 0,
 		},
 	}
 
@@ -259,26 +259,26 @@ func TestNewSecurityConfigFromEnv(t *testing.T) {
 func TestNewCORSConfigFromEnv(t *testing.T) {
 	setupTest()
 	tests := []struct {
-		name                    string
-		envVars                 map[string]string
-		expectedEnabled         bool
-		expectedOriginsCount    int
-		expectedMethodsCount    int
-		expectedHeadersCount    int
-		expectedExposeCount     int
-		expectedAllowCred       bool
-		expectedMaxAge          int
+		name                 string
+		envVars              map[string]string
+		expectedEnabled      bool
+		expectedOriginsCount int
+		expectedMethodsCount int
+		expectedHeadersCount int
+		expectedExposeCount  int
+		expectedAllowCred    bool
+		expectedMaxAge       int
 	}{
 		{
-			name:                    "returns default values when no env vars set",
-			envVars:                 map[string]string{},
-			expectedEnabled:         true,
-			expectedOriginsCount:    1, // ["*"]
-			expectedMethodsCount:    6, // GET,POST,PUT,DELETE,OPTIONS,PATCH
-			expectedHeadersCount:    5, // Origin,Content-Type,Accept,Authorization,X-API-Key
-			expectedExposeCount:     2, // Content-Length,Content-Type
-			expectedAllowCred:       false,
-			expectedMaxAge:          3600,
+			name:                 "returns default values when no env vars set",
+			envVars:              map[string]string{},
+			expectedEnabled:      true,
+			expectedOriginsCount: 1, // ["*"]
+			expectedMethodsCount: 6, // GET,POST,PUT,DELETE,OPTIONS,PATCH
+			expectedHeadersCount: 5, // Origin,Content-Type,Accept,Authorization,X-API-Key
+			expectedExposeCount:  2, // Content-Length,Content-Type
+			expectedAllowCred:    false,
+			expectedMaxAge:       3600,
 		},
 		{
 			name: "returns custom values from env vars",
@@ -291,52 +291,52 @@ func TestNewCORSConfigFromEnv(t *testing.T) {
 				"CORS_ALLOW_CREDENTIALS": "true",
 				"CORS_MAX_AGE":           "7200",
 			},
-			expectedEnabled:         true,
-			expectedOriginsCount:    2,
-			expectedMethodsCount:    2,
-			expectedHeadersCount:    2,
-			expectedExposeCount:     1,
-			expectedAllowCred:       true,
-			expectedMaxAge:          7200,
+			expectedEnabled:      true,
+			expectedOriginsCount: 2,
+			expectedMethodsCount: 2,
+			expectedHeadersCount: 2,
+			expectedExposeCount:  1,
+			expectedAllowCred:    true,
+			expectedMaxAge:       7200,
 		},
 		{
 			name: "handles disabled CORS",
 			envVars: map[string]string{
 				"CORS_ENABLED": "false",
 			},
-			expectedEnabled:         false,
-			expectedOriginsCount:    1,
-			expectedMethodsCount:    6,
-			expectedHeadersCount:    5,
-			expectedExposeCount:     2,
-			expectedAllowCred:       false,
-			expectedMaxAge:          3600,
+			expectedEnabled:      false,
+			expectedOriginsCount: 1,
+			expectedMethodsCount: 6,
+			expectedHeadersCount: 5,
+			expectedExposeCount:  2,
+			expectedAllowCred:    false,
+			expectedMaxAge:       3600,
 		},
 		{
 			name: "handles wildcard origin",
 			envVars: map[string]string{
 				"CORS_ALLOWED_ORIGINS": "*",
 			},
-			expectedEnabled:         true,
-			expectedOriginsCount:    1,
-			expectedMethodsCount:    6,
-			expectedHeadersCount:    5,
-			expectedExposeCount:     2,
-			expectedAllowCred:       false,
-			expectedMaxAge:          3600,
+			expectedEnabled:      true,
+			expectedOriginsCount: 1,
+			expectedMethodsCount: 6,
+			expectedHeadersCount: 5,
+			expectedExposeCount:  2,
+			expectedAllowCred:    false,
+			expectedMaxAge:       3600,
 		},
 		{
 			name: "handles multiple origins",
 			envVars: map[string]string{
 				"CORS_ALLOWED_ORIGINS": "https://example.com,https://app.example.com,https://admin.example.com",
 			},
-			expectedEnabled:         true,
-			expectedOriginsCount:    3,
-			expectedMethodsCount:    6,
-			expectedHeadersCount:    5,
-			expectedExposeCount:     2,
-			expectedAllowCred:       false,
-			expectedMaxAge:          3600,
+			expectedEnabled:      true,
+			expectedOriginsCount: 3,
+			expectedMethodsCount: 6,
+			expectedHeadersCount: 5,
+			expectedExposeCount:  2,
+			expectedAllowCred:    false,
+			expectedMaxAge:       3600,
 		},
 	}
 

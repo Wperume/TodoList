@@ -22,11 +22,11 @@ const (
 )
 
 var (
-	ErrListNotFound      = errors.New("todo list not found")
-	ErrTodoNotFound      = errors.New("todo not found")
-	ErrListNameExists    = errors.New("list with this name already exists")
-	ErrInvalidPriority   = errors.New("invalid priority value")
-	ErrInvalidSortField  = errors.New("invalid sort field")
+	ErrListNotFound     = errors.New("todo list not found")
+	ErrTodoNotFound     = errors.New("todo not found")
+	ErrListNameExists   = errors.New("list with this name already exists")
+	ErrInvalidPriority  = errors.New("invalid priority value")
+	ErrInvalidSortField = errors.New("invalid sort field")
 )
 
 // Storage provides in-memory storage for todo lists and todos

@@ -112,7 +112,7 @@ func TestGetAllLists(t *testing.T) {
 		require.NoError(t, err)
 
 		// Test limit > 100 (should cap at 20)
-		req := httptest.NewRequest("GET", "/lists?page=1&limit=200", nil)
+		req := httptest.NewRequest("GET", "/lists?page=1&limit=200", http.NoBody)
 		w := httptest.NewRecorder()
 		c, _ := gin.CreateTestContext(w)
 		c.Request = req
@@ -161,7 +161,7 @@ func TestCreateList(t *testing.T) {
 	t.Run("returns 400 for invalid JSON", func(t *testing.T) {
 		handler, _ := setupListHandler()
 
-		req := httptest.NewRequest("POST", "/lists", nil)
+		req := httptest.NewRequest("POST", "/lists", http.NoBody)
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -240,7 +240,7 @@ func TestGetListByID(t *testing.T) {
 		require.NoError(t, err)
 
 		// Create request
-		req := httptest.NewRequest("GET", "/lists/"+created.ID.String(), nil)
+		req := httptest.NewRequest("GET", "/lists/"+created.ID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -263,7 +263,7 @@ func TestGetListByID(t *testing.T) {
 		handler, _ := setupListHandler()
 
 		nonExistentID := uuid.New()
-		req := httptest.NewRequest("GET", "/lists/"+nonExistentID.String(), nil)
+		req := httptest.NewRequest("GET", "/lists/"+nonExistentID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -282,7 +282,7 @@ func TestGetListByID(t *testing.T) {
 	t.Run("returns 400 for invalid UUID format", func(t *testing.T) {
 		handler, _ := setupListHandler()
 
-		req := httptest.NewRequest("GET", "/lists/invalid-uuid", nil)
+		req := httptest.NewRequest("GET", "/lists/invalid-uuid", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -464,7 +464,7 @@ func TestUpdateList(t *testing.T) {
 		created, err := store.CreateList(testUserID, models.CreateTodoListRequest{Name: "Test"})
 		require.NoError(t, err)
 
-		req := httptest.NewRequest("PUT", "/lists/"+created.ID.String(), nil)
+		req := httptest.NewRequest("PUT", "/lists/"+created.ID.String(), http.NoBody)
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
 
@@ -513,7 +513,7 @@ func TestDeleteList(t *testing.T) {
 		require.NoError(t, err)
 
 		// Delete request
-		req := httptest.NewRequest("DELETE", "/lists/"+created.ID.String(), nil)
+		req := httptest.NewRequest("DELETE", "/lists/"+created.ID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -534,7 +534,7 @@ func TestDeleteList(t *testing.T) {
 		handler, _ := setupListHandler()
 
 		nonExistentID := uuid.New()
-		req := httptest.NewRequest("DELETE", "/lists/"+nonExistentID.String(), nil)
+		req := httptest.NewRequest("DELETE", "/lists/"+nonExistentID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -553,7 +553,7 @@ func TestDeleteList(t *testing.T) {
 	t.Run("returns 400 for invalid UUID", func(t *testing.T) {
 		handler, _ := setupListHandler()
 
-		req := httptest.NewRequest("DELETE", "/lists/invalid-uuid", nil)
+		req := httptest.NewRequest("DELETE", "/lists/invalid-uuid", http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)
@@ -585,7 +585,7 @@ func TestDeleteList(t *testing.T) {
 		require.NoError(t, err)
 
 		// Delete list
-		req := httptest.NewRequest("DELETE", "/lists/"+list.ID.String(), nil)
+		req := httptest.NewRequest("DELETE", "/lists/"+list.ID.String(), http.NoBody)
 		w := httptest.NewRecorder()
 
 		c, _ := gin.CreateTestContext(w)

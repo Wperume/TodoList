@@ -6,10 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"todolist-api/internal/logging"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
-	"todolist-api/internal/logging"
 )
 
 func TestRequestLogger(t *testing.T) {
@@ -34,7 +35,7 @@ func TestRequestLogger(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -56,7 +57,7 @@ func TestRequestLogger(t *testing.T) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -76,7 +77,7 @@ func TestRequestLogger(t *testing.T) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "server error"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -96,7 +97,7 @@ func TestRequestLogger(t *testing.T) {
 			c.JSON(http.StatusTooManyRequests, gin.H{"error": "rate limited"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -116,7 +117,7 @@ func TestRequestLogger(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		req.Header.Set("X-API-Key", "my-secret-api-key-12345")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -138,7 +139,7 @@ func TestRequestLogger(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		req.Header.Set("X-API-Key", "short")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -158,7 +159,7 @@ func TestRequestLogger(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		req.Header.Set("User-Agent", "TestClient/1.0")
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
@@ -179,7 +180,7 @@ func TestRequestLogger(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test?foo=bar&baz=qux", nil)
+		req := httptest.NewRequest("GET", "/test?foo=bar&baz=qux", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -199,7 +200,7 @@ func TestRequestLogger(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -230,7 +231,7 @@ func TestStructuredLogger(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test", nil)
+		req := httptest.NewRequest("GET", "/test", http.NoBody)
 		w := httptest.NewRecorder()
 		router.ServeHTTP(w, req)
 
@@ -254,7 +255,7 @@ func TestStructuredLogger(t *testing.T) {
 			c.JSON(http.StatusOK, gin.H{"message": "success"})
 		})
 
-		req := httptest.NewRequest("GET", "/test?param=value", nil)
+		req := httptest.NewRequest("GET", "/test?param=value", http.NoBody)
 		req.Header.Set("X-API-Key", "test-key-123")
 		req.Header.Set("User-Agent", "TestAgent/1.0")
 		w := httptest.NewRecorder()
@@ -306,7 +307,7 @@ func TestLogLevels(t *testing.T) {
 				c.JSON(tc.statusCode, gin.H{"status": tc.statusCode})
 			})
 
-			req := httptest.NewRequest("GET", "/test", nil)
+			req := httptest.NewRequest("GET", "/test", http.NoBody)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, req)
 
