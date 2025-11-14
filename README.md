@@ -871,10 +871,69 @@ The service can be configured using environment variables:
 
 ## Development
 
+### Setting Up Your Development Environment
+
+#### Install Development Tools
+
+To match the CI/CD environment and ensure your code passes all checks before pushing:
+
+**golangci-lint (v1.64.8 - matches CI/CD):**
+```bash
+# Download and install specific version
+cd /tmp
+curl -L https://github.com/golangci/golangci-lint/releases/download/v1.64.8/golangci-lint-1.64.8-$(uname -s | tr '[:upper:]' '[:lower:]')-amd64.tar.gz -o golangci-lint.tar.gz
+tar -xzf golangci-lint.tar.gz
+chmod +x golangci-lint-1.64.8-$(uname -s | tr '[:upper:]' '[:lower:]')-amd64/golangci-lint
+mv golangci-lint-1.64.8-$(uname -s | tr '[:upper:]' '[:lower:]')-amd64/golangci-lint $(go env GOPATH)/bin/
+cd -
+
+# Verify installation
+golangci-lint --version
+# Expected: golangci-lint has version 1.64.8
+```
+
+**goimports (for import formatting):**
+```bash
+go install golang.org/x/tools/cmd/goimports@latest
+
+# Verify installation
+goimports -h
+```
+
+**Add Go bin to PATH (if not already):**
+
+Add to your `~/.zshrc` (macOS) or `~/.bashrc` (Linux):
+```bash
+export PATH="$HOME/go/bin:$PATH"
+```
+
+Then reload:
+```bash
+source ~/.zshrc  # or source ~/.bashrc
+```
+
 ### Building
 
 ```bash
 go build -o todolist-api ./cmd/server
+```
+
+### Code Quality Checks
+
+Run these before committing to ensure your code passes CI/CD checks:
+
+```bash
+# Run linter (matches CI/CD environment)
+golangci-lint run --timeout=5m
+
+# Format code
+gofmt -w .
+
+# Fix imports
+goimports -w .
+
+# Run tests
+go test ./... -v
 ```
 
 ### Running Tests
