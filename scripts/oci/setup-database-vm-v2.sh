@@ -107,18 +107,43 @@ auto_screen() {
         # Install screen if not present
         if ! command -v screen &> /dev/null; then
             log_info "Installing screen..."
+            local install_success=false
+
             if command -v dnf &> /dev/null; then
-                dnf install -y screen
+                if dnf install -y screen 2>/dev/null; then
+                    install_success=true
+                fi
             elif command -v yum &> /dev/null; then
-                yum install -y screen
+                if yum install -y screen 2>/dev/null; then
+                    install_success=true
+                fi
             elif command -v apt-get &> /dev/null; then
-                apt-get update && apt-get install -y screen
+                if apt-get update && apt-get install -y screen 2>/dev/null; then
+                    install_success=true
+                fi
+            fi
+
+            # Verify screen was actually installed
+            if ! command -v screen &> /dev/null; then
+                install_success=false
+            fi
+
+            if [ "$install_success" = false ]; then
+                log_warn "Failed to install screen - continuing without it"
+                log_warn "Screen is optional but helps prevent SSH timeout issues"
+                log_warn "Consider running setup manually inside screen session"
+                return 0
             fi
         fi
 
-        # Re-exec in screen
-        log_info "Re-launching in screen session 'dbsetup'..."
-        exec screen -S dbsetup -L -Logfile "$LOG_FILE.screen" "$0"
+        # Verify screen is available before trying to use it
+        if command -v screen &> /dev/null; then
+            # Re-exec in screen
+            log_info "Re-launching in screen session 'dbsetup'..."
+            exec screen -S dbsetup -L -Logfile "$LOG_FILE.screen" "$0"
+        else
+            log_warn "Screen not available - continuing without it"
+        fi
     fi
 }
 
