@@ -1501,7 +1501,13 @@ Both VMs use **improved v2 scripts** that are:
 - ✅ **Resumable** - Can continue from where it left off after SSH disconnects
 - ✅ **State-tracked** - Tracks completed steps in state files
 - ✅ **Logged** - Detailed logging for troubleshooting
-- ✅ **SSH timeout resistant** - Auto-screen support for long-running operations
+
+**Important for Oracle Cloud Free Tier (1GB RAM):**
+- The `--auto-screen` flag is **NOT recommended** for free tier VMs due to memory constraints
+- Screen installation may be killed by the OOM (Out of Memory) process
+- Simply run the scripts without the flag: `sudo ./setup-database-vm-v2.sh`
+- If SSH disconnects, re-run the script - it will automatically resume from where it left off
+- Monitor progress in another SSH session: `sudo tail -f /var/log/todolist-db-setup.log`
 
 ### Prerequisites
 
@@ -1526,9 +1532,9 @@ scp scripts/oci/setup-database-vm-v2.sh opc@<database-vm-public-ip>:~
 # SSH into the database VM
 ssh opc@<database-vm-public-ip>
 
-# Make executable and run with auto-screen
+# Make executable and run (without --auto-screen for free tier VMs)
 chmod +x setup-database-vm-v2.sh
-sudo ./setup-database-vm-v2.sh --auto-screen
+sudo ./setup-database-vm-v2.sh
 ```
 
 **What it does:**
@@ -1568,9 +1574,9 @@ scp scripts/oci/setup-application-vm-v2.sh opc@<application-vm-public-ip>:~
 # SSH into the application VM
 ssh opc@<application-vm-public-ip>
 
-# Make executable and run with auto-screen
+# Make executable and run (without --auto-screen for free tier VMs)
 chmod +x setup-application-vm-v2.sh
-sudo ./setup-application-vm-v2.sh --auto-screen
+sudo ./setup-application-vm-v2.sh
 ```
 
 **What it does:**
@@ -1622,9 +1628,9 @@ Both v2 scripts are idempotent and track completed steps. If a script is interru
 
 ```bash
 # Simply re-run the script - it will skip completed steps
-sudo ./setup-database-vm-v2.sh --auto-screen
+sudo ./setup-database-vm-v2.sh
 # or
-sudo ./setup-application-vm-v2.sh --auto-screen
+sudo ./setup-application-vm-v2.sh
 ```
 
 The script will display:

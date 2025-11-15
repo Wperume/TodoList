@@ -6,7 +6,6 @@
 #
 # Features:
 #   - Idempotent: Safe to re-run multiple times
-#   - Automatic screen session support for long-running operations
 #   - Progress tracking and detailed logging
 #   - Checks existing state before each operation
 #
@@ -15,8 +14,13 @@
 #   2. Run: chmod +x setup-database-vm-v2.sh
 #   3. Run: sudo ./setup-database-vm-v2.sh
 #
-#   To run in screen automatically:
-#     sudo ./setup-database-vm-v2.sh --auto-screen
+# IMPORTANT: For Oracle Cloud free tier VMs (1GB RAM):
+#   - Do NOT use --auto-screen (screen installation may fail due to low memory)
+#   - If SSH disconnects, simply re-run the script - it will resume from where it left off
+#   - Monitor progress: sudo tail -f /var/log/todolist-db-setup.log
+#
+# Optional: To run in screen automatically (requires >1GB RAM):
+#   sudo ./setup-database-vm-v2.sh --auto-screen
 #
 
 set -u  # Exit on undefined variable
