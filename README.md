@@ -28,6 +28,26 @@ A REST API service for managing multiple named todo lists with full CRUD operati
 - **Graceful Shutdown**: Clean shutdown with proper resource cleanup and in-flight request completion
 - **CI/CD Pipeline**: Automated testing, building, security scanning, and deployment to Oracle Cloud Infrastructure
 
+## Table of Contents
+
+- [Features](#features)
+- [API Specification](#api-specification)
+- [Getting Started](#getting-started)
+- [Quick Start](#quick-start)
+- [Authentication](#authentication)
+- [Usage Examples](#usage-examples)
+- [Project Structure](#project-structure)
+- [Database](#database)
+- [Configuration](#configuration)
+- [Development](#development)
+- [Rate Limiting](#rate-limiting)
+- [Logging](#logging)
+- [HTTPS/TLS Support](#httpstls-support)
+- [Security](#security)
+- [Oracle Cloud Infrastructure (OCI) Deployment](#oracle-cloud-infrastructure-oci-deployment)
+- [Next Steps](#next-steps)
+- [License](#license)
+
 ## API Specification
 
 The API follows the OpenAPI 3.0 specification defined in [api/openapi.yaml](api/openapi.yaml).
