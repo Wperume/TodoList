@@ -1466,6 +1466,305 @@ JWT_SECRET_KEY=test-secret-key-32-characters!!
 
 See [SECURITY.md](SECURITY.md) for detailed security information, testing procedures, and deployment checklist.
 
+## Oracle Cloud Infrastructure (OCI) Deployment
+
+The project includes automated setup scripts for deploying the TodoList API on Oracle Cloud Infrastructure (OCI) using separate database and application VMs.
+
+### Overview
+
+The deployment uses two VMs:
+- **Database VM**: PostgreSQL 15 server with optimized configuration
+- **Application VM**: TodoList API with systemd service and automatic startup
+
+Both VMs use **improved v2 scripts** that are:
+- ✅ **Idempotent** - Safe to re-run multiple times without breaking existing setup
+- ✅ **Resumable** - Can continue from where it left off after SSH disconnects
+- ✅ **State-tracked** - Tracks completed steps in state files
+- ✅ **Logged** - Detailed logging for troubleshooting
+- ✅ **SSH timeout resistant** - Auto-screen support for long-running operations
+
+### Prerequisites
+
+1. **OCI Account** with appropriate permissions
+2. **Two Compute Instances** (VM.Standard.E2.1.Micro eligible for Always Free tier)
+   - Database VM: Oracle Linux 8 or Ubuntu 20.04+
+   - Application VM: Oracle Linux 8 or Ubuntu 20.04+
+3. **VCN Configuration**:
+   - Security List allowing port 5432 (PostgreSQL) within VCN
+   - Security List allowing port 8080 (API) from internet (or your IP range)
+   - Security List allowing port 8443 (HTTPS) from internet (optional)
+4. **SSH Access** to both VMs
+
+### Phase 1: Database VM Setup
+
+Upload and run the improved database setup script:
+
+```bash
+# On your local machine, upload the script to the database VM
+scp scripts/oci/setup-database-vm-v2.sh opc@<database-vm-public-ip>:~
+
+# SSH into the database VM
+ssh opc@<database-vm-public-ip>
+
+# Make executable and run with auto-screen
+chmod +x setup-database-vm-v2.sh
+sudo ./setup-database-vm-v2.sh --auto-screen
+```
+
+**What it does:**
+- Detects OS (Oracle Linux or Ubuntu)
+- Installs PostgreSQL 15
+- Creates `todolist` database and `todolist` user with secure password
+- Configures PostgreSQL for remote access from VCN
+- Sets up firewall rules (firewalld or ufw)
+- Saves credentials to `/root/db-credentials.txt`
+
+**Output:**
+The script will display connection details at the end:
+```
+Database Information:
+  Database Name: todolist
+  Database User: todolist
+  Database Password: <your-password>
+
+Connection Details:
+  Host: 10.0.1.x (Private IP)
+  Port: 5432
+
+Connection String:
+  postgresql://todolist:<password>@10.0.1.x:5432/todolist
+```
+
+**Save these credentials** - you'll need them for the application VM setup.
+
+### Phase 2: Application VM Setup
+
+Upload and run the improved application setup script:
+
+```bash
+# On your local machine, upload the script to the application VM
+scp scripts/oci/setup-application-vm-v2.sh opc@<application-vm-public-ip>:~
+
+# SSH into the application VM
+ssh opc@<application-vm-public-ip>
+
+# Make executable and run with auto-screen
+chmod +x setup-application-vm-v2.sh
+sudo ./setup-application-vm-v2.sh --auto-screen
+```
+
+**What it does:**
+- Detects OS (Oracle Linux or Ubuntu)
+- Installs Go 1.25.3
+- Installs Git
+- Clones the TodoList repository
+- Prompts for database connection details (from Phase 1)
+- Generates a secure JWT secret key
+- Creates and configures `.env` file
+- Builds the application
+- Runs database migrations
+- Creates systemd service with automatic restart
+- Configures firewall rules
+- Starts the API service
+
+**During setup**, you'll be prompted for:
+- Database host (private IP from Phase 1)
+- Database port (default: 5432)
+- Database name (default: todolist)
+- Database user (default: todolist)
+- Database password (from Phase 1)
+- CORS allowed origins (use `*` for testing, specific domain for production)
+
+### Using the Auto-Screen Feature
+
+The `--auto-screen` flag automatically runs the setup inside a `screen` session, which:
+- Prevents SSH timeout from interrupting the installation
+- Allows you to disconnect and reconnect without losing progress
+- Logs all output to a file for review
+
+**If SSH disconnects during setup:**
+```bash
+# Reconnect to the VM
+ssh opc@<vm-public-ip>
+
+# Re-attach to the screen session
+sudo screen -r dbsetup    # For database VM
+sudo screen -r appsetup   # For application VM
+
+# If screen session ended, check the log
+sudo tail -f /var/log/todolist-db-setup.log       # Database VM
+sudo tail -f /var/log/todolist-app-setup.log      # Application VM
+```
+
+### Resuming After Interruption
+
+Both v2 scripts are idempotent and track completed steps. If a script is interrupted:
+
+```bash
+# Simply re-run the script - it will skip completed steps
+sudo ./setup-database-vm-v2.sh --auto-screen
+# or
+sudo ./setup-application-vm-v2.sh --auto-screen
+```
+
+The script will display:
+```
+Step 'install_postgresql' already complete, skipping...
+Step 'initialize_postgresql' already complete, skipping...
+Continuing from step 'configure_postgresql'...
+```
+
+### Checking Setup Progress
+
+```bash
+# View state file to see completed steps
+sudo cat /var/lib/todolist-db-setup.state        # Database VM
+sudo cat /var/lib/todolist-app-setup.state       # Application VM
+
+# View detailed logs
+sudo tail -f /var/log/todolist-db-setup.log      # Database VM
+sudo tail -f /var/log/todolist-app-setup.log     # Application VM
+
+# Check service status (Application VM)
+sudo systemctl status todolist-api
+```
+
+### Resetting Setup (Start Fresh)
+
+If you need to completely reset and start over:
+
+```bash
+# Database VM
+sudo systemctl stop postgresql-15    # or postgresql
+sudo rm -rf /var/lib/pgsql/15/data   # or /var/lib/postgresql/15/main
+sudo rm /var/lib/todolist-db-setup.state
+sudo rm /var/log/todolist-db-setup.log
+
+# Application VM
+sudo systemctl stop todolist-api
+sudo rm -rf /opt/todolist
+sudo rm /var/lib/todolist-app-setup.state
+sudo rm /var/log/todolist-app-setup.log
+sudo rm /etc/systemd/system/todolist-api.service
+sudo systemctl daemon-reload
+```
+
+Then re-run the setup scripts.
+
+### Verifying Deployment
+
+After successful setup, test the API:
+
+```bash
+# From the application VM
+curl http://localhost:8080/health
+
+# From your local machine (using public IP)
+curl http://<application-vm-public-ip>:8080/health
+
+# Expected response:
+{"status":"ok"}
+
+# Test registration and authentication
+curl -X POST http://<application-vm-public-ip>:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@example.com","password":"SecurePass123!"}'
+```
+
+### Troubleshooting
+
+**PostgreSQL connection failed:**
+```
+Failed to connect to database: dial tcp 10.0.1.x:5432: i/o timeout
+```
+- Check OCI Security List allows port 5432 from application VM's subnet
+- Verify database VM firewall: `sudo firewall-cmd --list-all` or `sudo ufw status`
+- Test connection from app VM: `nc -zv 10.0.1.x 5432`
+
+**API not accessible from internet:**
+```
+curl: (7) Failed to connect to <public-ip> port 8080: Connection refused
+```
+- Check OCI Security List allows port 8080 from 0.0.0.0/0 (or your IP)
+- Verify application VM firewall: `sudo firewall-cmd --list-all` or `sudo ufw status`
+- Check service is running: `sudo systemctl status todolist-api`
+
+**Screen session not found:**
+```
+No screen session found.
+```
+- The setup may have completed successfully - check the log file
+- Or the screen session may have terminated on error - check the log file
+
+**Setup script hangs:**
+- The script may be waiting for user input (password prompt)
+- Check the screen session: `sudo screen -r dbsetup` or `sudo screen -r appsetup`
+- Check the log file for the last action
+
+**Service fails to start:**
+```
+Job for todolist-api.service failed
+```
+- Check logs: `sudo journalctl -u todolist-api -n 50`
+- Verify .env file: `sudo cat /opt/todolist/.env`
+- Test database connection manually from `/opt/todolist` directory
+
+### SSH Keep-Alive Configuration
+
+To prevent SSH timeouts during manual operations, add to your local `~/.ssh/config`:
+
+```
+Host oci-db
+    HostName <database-vm-public-ip>
+    User opc
+    ServerAliveInterval 60
+    ServerAliveCountMax 10
+
+Host oci-app
+    HostName <application-vm-public-ip>
+    User opc
+    ServerAliveInterval 60
+    ServerAliveCountMax 10
+```
+
+Then connect using:
+```bash
+ssh oci-db
+ssh oci-app
+```
+
+### Security Recommendations for Production
+
+1. **Database VM**:
+   - Only allow port 5432 from application VM's private IP (not entire VCN)
+   - Disable password authentication, use key-based auth only
+   - Regular PostgreSQL updates and security patches
+   - Enable PostgreSQL SSL/TLS connections
+
+2. **Application VM**:
+   - Enable HTTPS with proper certificates (Let's Encrypt)
+   - Set strict CORS origins (not `*`)
+   - Use strong JWT secret key
+   - Enable rate limiting
+   - Regular application and OS updates
+   - Consider using Oracle Cloud Load Balancer with SSL termination
+
+3. **Both VMs**:
+   - Keep SSH keys secure
+   - Disable root login
+   - Enable automatic security updates
+   - Set up monitoring and alerts
+   - Regular backups (DB data and application state)
+
+### Cost Optimization
+
+Oracle Cloud offers Always Free tier resources:
+- 2x AMD-based Compute instances (VM.Standard.E2.1.Micro)
+- 200GB block storage
+- 10GB Object Storage
+
+This is sufficient for running the TodoList API with database on separate VMs at no cost.
+
 ## Next Steps
 
 - ✅ ~~Add database persistence (PostgreSQL/MongoDB)~~ - **COMPLETED**
