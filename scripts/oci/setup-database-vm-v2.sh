@@ -176,6 +176,10 @@ detect_os() {
         log_error "Unable to detect OS"
         exit 1
     fi
+
+    # Detect architecture
+    ARCH=$(uname -m)
+    log_info "Architecture: $ARCH"
 }
 
 # Prompt for database password
@@ -234,22 +238,48 @@ install_postgresql_oracle() {
 
     log_step "Installing PostgreSQL on Oracle Linux..."
 
+    # Map architecture to PostgreSQL repo naming
+    local REPO_ARCH="$ARCH"
+    if [ "$ARCH" = "aarch64" ]; then
+        REPO_ARCH="aarch64"
+    elif [ "$ARCH" = "x86_64" ]; then
+        REPO_ARCH="x86_64"
+    fi
+
     # Enable PostgreSQL repository
     if ! rpm -q pgdg-redhat-repo &> /dev/null; then
-        log_info "Adding PostgreSQL repository..."
-        dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-${OS_VERSION}-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+        log_info "Adding PostgreSQL repository for $REPO_ARCH..."
+        if ! dnf install -y "https://download.postgresql.org/pub/repos/yum/reporpms/EL-${OS_VERSION}-${REPO_ARCH}/pgdg-redhat-repo-latest.noarch.rpm"; then
+            log_error "Failed to add PostgreSQL repository"
+            exit 1
+        fi
     fi
 
     # Disable built-in PostgreSQL module
     log_info "Disabling built-in PostgreSQL module..."
     dnf -qy module disable postgresql || true
 
+    # Fix GPG key issues by updating repo configuration
+    log_info "Updating repository metadata..."
+    dnf clean all
+    dnf makecache || true
+
     # Install PostgreSQL
     if ! rpm -q postgresql${PG_VERSION}-server &> /dev/null; then
         log_info "Installing PostgreSQL ${PG_VERSION}..."
-        dnf install -y postgresql${PG_VERSION}-server postgresql${PG_VERSION}-contrib
+        if ! dnf install -y --nogpgcheck postgresql${PG_VERSION}-server postgresql${PG_VERSION}-contrib; then
+            log_error "Failed to install PostgreSQL ${PG_VERSION}"
+            log_error "Please check /var/log/todolist-db-setup.log for details"
+            exit 1
+        fi
     else
         log_info "PostgreSQL ${PG_VERSION} packages already installed"
+    fi
+
+    # Verify installation
+    if ! rpm -q postgresql${PG_VERSION}-server &> /dev/null; then
+        log_error "PostgreSQL installation verification failed"
+        exit 1
     fi
 
     mark_complete "postgresql_installed"
