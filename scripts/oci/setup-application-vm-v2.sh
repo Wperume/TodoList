@@ -41,7 +41,7 @@ APP_DIR="/opt/${APP_NAME}"
 APP_USER="todolist"
 GIT_REPO=""
 GIT_BRANCH="main"
-GO_VERSION="1.24.0"
+GO_VERSION="1.24.10"
 
 # Database configuration
 DB_HOST=""
@@ -190,6 +190,20 @@ detect_os() {
         log_error "Unable to detect OS"
         exit 1
     fi
+
+    # Detect architecture
+    ARCH=$(uname -m)
+    log_info "Architecture: $ARCH"
+
+    # Map to Go's architecture naming
+    if [ "$ARCH" = "x86_64" ]; then
+        GO_ARCH="amd64"
+    elif [ "$ARCH" = "aarch64" ]; then
+        GO_ARCH="arm64"
+    else
+        log_error "Unsupported architecture: $ARCH"
+        exit 1
+    fi
 }
 
 # Prompt for configuration
@@ -281,16 +295,31 @@ install_go() {
 
     # Download Go
     cd /tmp
-    if [ ! -f "go${GO_VERSION}.linux-amd64.tar.gz" ]; then
-        log_info "Downloading Go ${GO_VERSION}..."
-        wget -q https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
+    local GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"
+    if [ ! -f "$GO_TARBALL" ]; then
+        log_info "Downloading Go ${GO_VERSION} for ${GO_ARCH}..."
+        if ! wget -q "https://go.dev/dl/${GO_TARBALL}"; then
+            log_error "Failed to download Go ${GO_VERSION}"
+            log_error "URL: https://go.dev/dl/${GO_TARBALL}"
+            exit 1
+        fi
+    fi
+
+    # Verify download
+    if [ ! -f "$GO_TARBALL" ]; then
+        log_error "Go tarball not found after download: $GO_TARBALL"
+        exit 1
     fi
 
     # Remove old installation
     rm -rf /usr/local/go
 
     # Extract and install
-    tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+    log_info "Extracting Go..."
+    if ! tar -C /usr/local -xzf "$GO_TARBALL"; then
+        log_error "Failed to extract Go tarball"
+        exit 1
+    fi
 
     # Add to system PATH
     if [ ! -f /etc/profile.d/go.sh ]; then
