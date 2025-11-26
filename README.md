@@ -128,6 +128,9 @@ sudo mv todocli /usr/local/bin/
 ### Quick Start
 
 ```bash
+# Configure for self-signed certificates (OCI instance)
+todocli config set --api-url https://192.18.159.108:8443/api/v1 --insecure
+
 # Register and login
 todocli auth register user@example.com --first-name John
 todocli auth login user@example.com
@@ -141,6 +144,8 @@ todocli todo create <list-id> "Buy milk" -p high -d 2025-01-20
 # View all lists
 todocli list ls
 ```
+
+**Note**: Use `--insecure` flag or `config set --insecure` for self-signed certificates.
 
 ### Documentation
 
