@@ -60,8 +60,19 @@ func SecurityHeaders() gin.HandlerFunc {
 		c.Header("X-Powered-By", "")
 		c.Header("Server", "")
 
-		// Content Security Policy (strict for API)
-		c.Header("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+		// Content Security Policy - Relax for Swagger UI
+		if strings.HasPrefix(c.Request.URL.Path, "/swagger") {
+			// Allow Swagger UI to load its resources (CSS, JS, images)
+			c.Header("Content-Security-Policy",
+				"default-src 'self'; "+
+				"script-src 'self' 'unsafe-inline' 'unsafe-eval'; "+
+				"style-src 'self' 'unsafe-inline'; "+
+				"img-src 'self' data:; "+
+				"font-src 'self' data:")
+		} else {
+			// Strict CSP for API endpoints
+			c.Header("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+		}
 
 		// Referrer policy
 		c.Header("Referrer-Policy", "no-referrer")
