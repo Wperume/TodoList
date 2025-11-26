@@ -54,14 +54,16 @@ The API follows the OpenAPI 3.0 specification defined in [api/openapi.yaml](api/
 
 ### Base URL
 
-**HTTP (Development):**
+**Development:**
 ```
-http://localhost:8080/api/v1
+http://localhost:8080/api/v1   # HTTP
+https://localhost:8443/api/v1  # HTTPS (with self-signed cert)
 ```
 
-**HTTPS (Production):**
+**Production:**
 ```
-https://localhost:8443/api/v1
+http://localhost:80/api/v1     # HTTP (redirects to HTTPS)
+https://localhost:443/api/v1   # HTTPS (with proper certificate)
 ```
 
 ### Endpoints
