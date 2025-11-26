@@ -112,25 +112,70 @@ log_success "Code updated to latest $BRANCH"
 
 # Step 4: Check if swag is installed
 log_info "Step 4/8: Checking Swagger generator (swag)..."
-if [ ! -f "$SWAG_PATH" ]; then
-    log_warning "swag not found, installing..."
-    sudo -u $APP_USER bash -c "export PATH=$PATH:/usr/local/go/bin && $GO_PATH install github.com/swaggo/swag/cmd/swag@latest"
 
-    if [ -f "/home/$APP_USER/go/bin/swag" ]; then
-        SWAG_PATH="/home/$APP_USER/go/bin/swag"
-        log_success "swag installed at $SWAG_PATH"
-    else
-        log_error "Failed to install swag"
-        exit 1
+# Check multiple possible swag locations
+SWAG_LOCATIONS=(
+    "/usr/local/go/bin/swag"
+    "/home/$APP_USER/go/bin/swag"
+    "$HOME/go/bin/swag"
+)
+
+SWAG_FOUND=false
+for location in "${SWAG_LOCATIONS[@]}"; do
+    if [ -f "$location" ]; then
+        SWAG_PATH="$location"
+        SWAG_FOUND=true
+        log_success "swag found at $SWAG_PATH"
+        break
     fi
-else
-    log_success "swag found at $SWAG_PATH"
+done
+
+if [ "$SWAG_FOUND" = false ]; then
+    log_warning "swag not found, installing..."
+
+    # Try installing with a specific compatible version for Go 1.24
+    # swag v1.16.x is known to work well with Go 1.24
+    log_info "Installing swag v1.16.4 (compatible with Go 1.24)..."
+
+    sudo -u $APP_USER bash -c "export PATH=$PATH:/usr/local/go/bin && $GO_PATH install github.com/swaggo/swag/cmd/swag@v1.16.4" 2>&1 | tee /tmp/swag-install.log
+
+    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+        log_error "Failed to install swag v1.16.4"
+        log_info "Trying latest version..."
+        sudo -u $APP_USER bash -c "export PATH=$PATH:/usr/local/go/bin && $GO_PATH install github.com/swaggo/swag/cmd/swag@latest" 2>&1 | tee /tmp/swag-install.log
+    fi
+
+    # Check if installation succeeded
+    for location in "${SWAG_LOCATIONS[@]}"; do
+        if [ -f "$location" ]; then
+            SWAG_PATH="$location"
+            SWAG_FOUND=true
+            log_success "swag installed at $SWAG_PATH"
+            break
+        fi
+    done
+
+    if [ "$SWAG_FOUND" = false ]; then
+        log_error "Failed to install swag. Check /tmp/swag-install.log for details"
+        log_warning "Attempting to continue without regenerating Swagger docs..."
+        log_warning "Swagger UI may not reflect latest changes!"
+        SWAG_PATH=""
+    fi
 fi
 
 # Step 5: Regenerate Swagger documentation
 log_info "Step 5/8: Regenerating Swagger documentation..."
-sudo -u $APP_USER bash -c "cd $APP_DIR && $SWAG_PATH init -g cmd/server/main.go -o docs"
-log_success "Swagger documentation regenerated"
+if [ -n "$SWAG_PATH" ] && [ -f "$SWAG_PATH" ]; then
+    sudo -u $APP_USER bash -c "cd $APP_DIR && $SWAG_PATH init -g cmd/server/main.go -o docs"
+    if [ $? -eq 0 ]; then
+        log_success "Swagger documentation regenerated"
+    else
+        log_warning "Failed to regenerate Swagger docs, using existing docs"
+    fi
+else
+    log_warning "Skipping Swagger regeneration (swag not available)"
+    log_info "Using pre-generated docs from Git repository"
+fi
 
 # Step 6: Rebuild application
 log_info "Step 6/8: Building application..."
