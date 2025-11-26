@@ -42,6 +42,7 @@ A REST API service for managing multiple named todo lists with full CRUD operati
 - [Development](#development)
 - [Rate Limiting](#rate-limiting)
 - [Logging](#logging)
+- [Health Checks](#health-checks)
 - [HTTPS/TLS Support](#httpstls-support)
 - [Security](#security)
 - [Oracle Cloud Infrastructure (OCI) Deployment](#oracle-cloud-infrastructure-oci-deployment)
@@ -93,8 +94,11 @@ https://localhost:443/api/v1   # HTTPS (with proper certificate)
 - `PUT /lists/{listId}/todos/{todoId}` - Update a todo
 - `DELETE /lists/{listId}/todos/{todoId}` - Delete a todo
 
-#### Health Check
-- `GET /health` - Health check endpoint
+#### Health Checks (Public)
+- `GET /health` - Basic health check (simple status response)
+- `GET /health/detailed` - Detailed health check with database connectivity, migration status, and system metrics
+- `GET /health/ready` - Kubernetes-style readiness probe (checks if app can handle requests)
+- `GET /health/live` - Kubernetes-style liveness probe (checks if app is running)
 
 ## Getting Started
 
@@ -1155,6 +1159,165 @@ LOG_FILE_ENABLED=false
 LOG_LEVEL=warn
 ```
 
+## Health Checks
+
+The API provides comprehensive health check endpoints for monitoring application and infrastructure health.
+
+### Endpoints
+
+#### Basic Health Check
+```
+GET /health
+```
+
+Simple health check that returns a basic status response. Use this for basic uptime monitoring.
+
+**Response (200 OK):**
+```json
+{
+  "status": "healthy"
+}
+```
+
+#### Detailed Health Check
+```
+GET /health/detailed
+```
+
+Comprehensive health check that includes:
+- Database connectivity and connection pool statistics
+- Database migration status
+- System metrics (goroutines, memory usage, garbage collection)
+- Overall health status based on all components
+
+**Response (200 OK when healthy):**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-25T22:00:00Z",
+  "uptime": "2h 15m 30s",
+  "version": "1.0.0",
+  "checks": {
+    "database": {
+      "status": "healthy",
+      "message": "Database connection is healthy",
+      "details": {
+        "open_connections": 5,
+        "in_use": 2,
+        "idle": 3,
+        "wait_count": 0,
+        "wait_duration_ms": 0
+      }
+    },
+    "migrations": {
+      "status": "healthy",
+      "message": "Migrations are up to date",
+      "details": {
+        "version": 1,
+        "dirty": false
+      }
+    },
+    "system": {
+      "status": "info",
+      "message": "System information",
+      "details": {
+        "goroutines": 12,
+        "memory_alloc_mb": 8,
+        "memory_sys_mb": 24,
+        "num_gc": 3,
+        "go_version": "go1.24.0"
+      }
+    }
+  }
+}
+```
+
+**Response (503 Service Unavailable when unhealthy):**
+Returns the same structure but with `"status": "unhealthy"` and error details in component checks.
+
+#### Readiness Probe
+```
+GET /health/ready
+```
+
+Kubernetes-style readiness probe that checks if the application can handle requests. Returns 200 if ready, 503 if not ready.
+
+**Use case:** Load balancers and orchestrators use this to determine if traffic should be routed to this instance.
+
+**Response (200 OK):**
+```json
+{
+  "status": "ready"
+}
+```
+
+**Response (503 Service Unavailable):**
+```json
+{
+  "status": "not_ready",
+  "reason": "database_unavailable",
+  "message": "Database ping failed"
+}
+```
+
+#### Liveness Probe
+```
+GET /health/live
+```
+
+Kubernetes-style liveness probe that checks if the application is running. Always returns 200 if the process is alive.
+
+**Use case:** Orchestrators use this to determine if the application should be restarted.
+
+**Response (200 OK):**
+```json
+{
+  "status": "alive"
+}
+```
+
+### Health Check Usage Examples
+
+**Basic uptime monitoring:**
+```bash
+curl http://localhost:8080/health
+```
+
+**Comprehensive health status:**
+```bash
+curl http://localhost:8080/health/detailed
+```
+
+**Check if ready for traffic:**
+```bash
+curl http://localhost:8080/health/ready
+```
+
+**Check if process is alive:**
+```bash
+curl http://localhost:8080/health/live
+```
+
+### Kubernetes Integration
+
+For Kubernetes deployments, configure readiness and liveness probes:
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /health/live
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 30
+
+readinessProbe:
+  httpGet:
+    path: /health/ready
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 10
+```
+
 ## HTTPS/TLS Support
 
 The API includes built-in HTTPS/TLS support for secure communication in production environments.
@@ -1895,10 +2058,10 @@ This is sufficient for running the TodoList API with database on separate VMs at
 - ✅ ~~Add security hardening (XSS, CORS, headers, size limits)~~ - **COMPLETED**
 - ✅ ~~Add HTTPS/TLS support~~ - **COMPLETED**
 - ✅ ~~Add JWT authentication and authorization~~ - **COMPLETED**
+- ✅ ~~Add health check with database connectivity status~~ - **COMPLETED**
 - Add metrics and monitoring (Prometheus)
 - Add API documentation UI (Swagger/ReDoc)
 - Add database connection pooling tuning
-- Add health check with database connectivity status
 - Add Let's Encrypt ACME support for automatic certificate management
 - Add email verification for new user accounts
 - Add password reset functionality
