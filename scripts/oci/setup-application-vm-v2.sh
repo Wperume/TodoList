@@ -690,6 +690,7 @@ configure_firewall() {
     if command -v firewall-cmd &> /dev/null; then
         # firewalld (Oracle Linux)
         firewall-cmd --permanent --add-port=8080/tcp || true
+        firewall-cmd --permanent --add-port=8443/tcp || true
         firewall-cmd --permanent --add-port=80/tcp || true
         firewall-cmd --permanent --add-port=443/tcp || true
         firewall-cmd --reload
@@ -697,6 +698,7 @@ configure_firewall() {
     elif command -v ufw &> /dev/null; then
         # ufw (Ubuntu)
         ufw allow 8080/tcp
+        ufw allow 8443/tcp
         ufw allow 80/tcp
         ufw allow 443/tcp
         log_success "Firewall configured (ufw)"
