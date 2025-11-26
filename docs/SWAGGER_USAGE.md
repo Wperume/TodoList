@@ -79,8 +79,15 @@ curl -X POST http://localhost:8080/api/v1/auth/login \
 
 #### Option B: Using curl
 
+**IMPORTANT**: Do NOT use `curl -I` (HEAD request) - gin-swagger doesn't handle HEAD requests properly and will return 404. Use GET requests only:
+
 ```bash
+# Correct - GET request (will return HTML)
 curl -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  http://localhost:8080/swagger/index.html
+
+# WRONG - HEAD request returns 404 (known gin-swagger limitation)
+curl -I -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
   http://localhost:8080/swagger/index.html
 ```
 
@@ -167,6 +174,23 @@ When you access Swagger:
 4. **User Existence**: User in token must exist in database
 
 ## Troubleshooting
+
+### 404 Not Found with curl -I
+
+**Problem**: `curl -I https://localhost:8443/swagger/index.html` returns 404
+
+**Root Cause**: gin-swagger doesn't properly handle HEAD requests (curl -I flag)
+
+**Solution:** Use GET requests instead of HEAD:
+```bash
+# ✅ CORRECT - Use GET request
+curl -k -H "Authorization: Bearer $TOKEN" https://localhost:8443/swagger/index.html
+
+# ❌ WRONG - HEAD request returns 404
+curl -I -k -H "Authorization: Bearer $TOKEN" https://localhost:8443/swagger/index.html
+```
+
+Browsers use GET requests by default, so accessing via browser will work correctly.
 
 ### 401 Unauthorized
 
