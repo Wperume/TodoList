@@ -28,11 +28,13 @@ A REST API service for managing multiple named todo lists with full CRUD operati
 - **API Documentation**: Interactive Swagger/OpenAPI documentation for all endpoints
 - **Graceful Shutdown**: Clean shutdown with proper resource cleanup and in-flight request completion
 - **CI/CD Pipeline**: Automated testing, building, security scanning, and deployment to Oracle Cloud Infrastructure
+- **CLI Client**: Type-safe Go CLI tool with full API coverage, automatic token management, and human-readable output
 
 ## Table of Contents
 
 - [Features](#features)
 - [API Specification](#api-specification)
+- [CLI Client](#cli-client)
 - [Getting Started](#getting-started)
 - [Quick Start](#quick-start)
 - [Authentication](#authentication)
@@ -100,6 +102,54 @@ https://localhost:443/api/v1   # HTTPS (with proper certificate)
 - `GET /health/detailed` - Detailed health check with database connectivity, migration status, and system metrics
 - `GET /health/ready` - Kubernetes-style readiness probe (checks if app can handle requests)
 - `GET /health/live` - Kubernetes-style liveness probe (checks if app is running)
+
+## CLI Client
+
+A type-safe, feature-complete command-line client is available for interacting with the TodoList API.
+
+### Features
+
+- **Type-safe**: Uses the same Go models as the API server
+- **Automatic token management**: Saves and reuses access/refresh tokens
+- **Full API coverage**: All authentication, list, and todo endpoints
+- **Flexible output**: Human-readable tables or raw JSON
+- **Secure config**: Credentials stored with file permissions 0600
+
+### Installation
+
+```bash
+# Build from source
+go build -o todocli cmd/todocli/*.go
+
+# Install to system
+sudo mv todocli /usr/local/bin/
+```
+
+### Quick Start
+
+```bash
+# Register and login
+todocli auth register user@example.com --first-name John
+todocli auth login user@example.com
+
+# Create a list
+todocli list create "Shopping" -d "Weekly groceries"
+
+# Add todos
+todocli todo create <list-id> "Buy milk" -p high -d 2025-01-20
+
+# View all lists
+todocli list ls
+```
+
+### Documentation
+
+See [docs/CLI_USAGE.md](docs/CLI_USAGE.md) for complete CLI documentation including:
+- All available commands
+- Configuration management
+- Example workflows
+- Script integration
+- Troubleshooting
 
 ## Getting Started
 

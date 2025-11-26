@@ -7,6 +7,10 @@
 todolist-api
 server
 migrate
+todocli
+
+# CLI config file (contains tokens)
+.todolist-cli.json
 
 # Test binary, built with `go test -c`
 *.test
