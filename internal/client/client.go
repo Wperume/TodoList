@@ -237,12 +237,12 @@ func (c *Client) GetLists() ([]models.TodoList, error) {
 		return nil, err
 	}
 
-	var lists []models.TodoList
-	if err := parseResponse(resp, &lists); err != nil {
+	var paginatedResp models.PaginatedListsResponse
+	if err := parseResponse(resp, &paginatedResp); err != nil {
 		return nil, err
 	}
 
-	return lists, nil
+	return paginatedResp.Data, nil
 }
 
 // CreateList creates a new todo list
