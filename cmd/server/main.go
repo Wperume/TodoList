@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -201,11 +202,36 @@ func main() {
 		})
 	}
 
-	// Swagger documentation endpoint (requires authentication)
-	// Only authenticated users can view API documentation
+	// Swagger documentation endpoint
+	// Authentication required for HTML pages only (not static resources like CSS/JS/images)
 	if jwtConfig != nil {
 		swagger := router.Group("/swagger")
-		swagger.Use(middleware.AuthMiddleware(jwtConfig))
+		// Custom middleware: only require auth for HTML pages, not static files
+		swagger.Use(func(c *gin.Context) {
+			path := c.Request.URL.Path
+			// Static resources (CSS, JS, images, fonts) don't need auth
+			// This allows browsers to load these resources without authentication headers
+			if strings.HasSuffix(path, ".css") ||
+				strings.HasSuffix(path, ".js") ||
+				strings.HasSuffix(path, ".png") ||
+				strings.HasSuffix(path, ".jpg") ||
+				strings.HasSuffix(path, ".jpeg") ||
+				strings.HasSuffix(path, ".gif") ||
+				strings.HasSuffix(path, ".svg") ||
+				strings.HasSuffix(path, ".woff") ||
+				strings.HasSuffix(path, ".woff2") ||
+				strings.HasSuffix(path, ".ttf") ||
+				strings.HasSuffix(path, ".eot") ||
+				strings.HasSuffix(path, ".map") ||
+				strings.HasSuffix(path, ".json") ||
+				strings.HasSuffix(path, ".yaml") {
+				// Allow static resources without authentication
+				c.Next()
+				return
+			}
+			// HTML pages and other endpoints require authentication
+			middleware.AuthMiddleware(jwtConfig)(c)
+		})
 		swagger.GET("/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 	} else {
 		// Fallback for in-memory mode (no auth available)
