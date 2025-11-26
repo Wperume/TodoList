@@ -1513,13 +1513,19 @@ Both VMs use **improved v2 scripts** that are:
 
 1. **OCI Account** with appropriate permissions
 2. **Two Compute Instances** (VM.Standard.E2.1.Micro eligible for Always Free tier)
-   - Database VM: Oracle Linux 8 or Ubuntu 20.04+
-   - Application VM: Oracle Linux 8 or Ubuntu 20.04+
-3. **VCN Configuration**:
-   - Security List allowing port 5432 (PostgreSQL) within VCN
-   - Security List allowing port 8080 (API) from internet (or your IP range)
-   - Security List allowing port 8443 (HTTPS) from internet (optional)
+   - Database VM: Oracle Linux 8 or Ubuntu 20.04+ (aarch64 or x86_64)
+   - Application VM: Oracle Linux 8 or Ubuntu 20.04+ (aarch64 or x86_64)
+   - Note: Scripts auto-detect architecture and OS
+3. **VCN Configuration** (Security Lists):
+   - **CRITICAL:** Security Lists must be configured or deployment will fail with timeouts
+   - For Database VM subnet:
+     - Ingress: TCP port 5432 from `10.0.0.0/24` (or your VCN CIDR)
+   - For Application VM subnet:
+     - Ingress: TCP port 8080 from `0.0.0.0/0` (or your IP for security)
+     - Ingress: TCP ports 80, 443 from `0.0.0.0/0` (optional, for future HTTPS)
+   - Go to: OCI Console → Networking → Virtual Cloud Networks → Your VCN → Security Lists
 4. **SSH Access** to both VMs
+5. **Your TodoList GitHub Repository URL** (for application setup)
 
 ### Phase 1: Database VM Setup
 
@@ -1580,26 +1586,30 @@ sudo ./setup-application-vm-v2.sh
 ```
 
 **What it does:**
-- Detects OS (Oracle Linux or Ubuntu)
-- Installs Go 1.25.3
-- Installs Git
-- Clones the TodoList repository
+- Detects OS and architecture (Oracle Linux/Ubuntu, x86_64/aarch64)
+- Installs Go 1.24.10 (matches project requirement)
+- Installs Git and PostgreSQL client
+- Clones your TodoList repository
 - Prompts for database connection details (from Phase 1)
 - Generates a secure JWT secret key
 - Creates and configures `.env` file
-- Builds the application
-- Runs database migrations
+- Builds the application binaries
+- Tests database connectivity and authentication
 - Creates systemd service with automatic restart
-- Configures firewall rules
+- Configures firewall rules (ports 8080, 80, 443)
+- Configures SELinux (Oracle Linux)
 - Starts the API service
 
 **During setup**, you'll be prompted for:
+- Git repository URL (your TodoList GitHub repository)
 - Database host (private IP from Phase 1)
 - Database port (default: 5432)
 - Database name (default: todolist)
 - Database user (default: todolist)
 - Database password (from Phase 1)
 - CORS allowed origins (use `*` for testing, specific domain for production)
+
+**Note:** Database migrations run automatically when the application starts (GORM AutoMigrate), so you don't need to run them manually.
 
 ### Using the Auto-Screen Feature
 
@@ -1699,41 +1709,112 @@ curl -X POST http://<application-vm-public-ip>:8080/api/v1/auth/register \
 
 ### Troubleshooting
 
-**PostgreSQL connection failed:**
+**Screen installation killed (Out of Memory):**
 ```
-Failed to connect to database: dial tcp 10.0.1.x:5432: i/o timeout
+sudo dnf install -y screen
+Killed
 ```
-- Check OCI Security List allows port 5432 from application VM's subnet
-- Verify database VM firewall: `sudo firewall-cmd --list-all` or `sudo ufw status`
-- Test connection from app VM: `nc -zv 10.0.1.x 5432`
+- **Solution:** Don't use `--auto-screen` on 1GB RAM free tier VMs
+- Simply run the script without the flag: `sudo ./setup-database-vm-v2.sh`
+- The script is idempotent - if SSH disconnects, just re-run it
 
-**API not accessible from internet:**
+**PostgreSQL GPG signature error:**
 ```
-curl: (7) Failed to connect to <public-ip> port 8080: Connection refused
+Error: Failed to download metadata for repo 'pgdg-common': repomd.xml GPG signature verification error: Bad GPG signature
 ```
-- Check OCI Security List allows port 8080 from 0.0.0.0/0 (or your IP)
-- Verify application VM firewall: `sudo firewall-cmd --list-all` or `sudo ufw status`
-- Check service is running: `sudo systemctl status todolist-api`
+- **Solution:** Script now uses `--nogpgcheck` to bypass this known issue
+- Re-upload the latest script version if you see this error
 
-**Screen session not found:**
+**PostgreSQL connection timeout:**
 ```
-No screen session found.
+Ncat: TIMEOUT when testing nc -z -v <db-host> 5432
 ```
-- The setup may have completed successfully - check the log file
-- Or the screen session may have terminated on error - check the log file
+- **Solution:** Add OCI Security List ingress rule for port 5432
+  1. Go to OCI Console → Networking → Virtual Cloud Networks
+  2. Select your VCN → Security Lists → Default Security List
+  3. Add Ingress Rule: Source CIDR `10.0.0.0/24`, Protocol TCP, Port `5432`
+- Also verify database VM firewall allows 5432:
+  ```bash
+  sudo firewall-cmd --permanent --add-port=5432/tcp
+  sudo firewall-cmd --reload
+  ```
 
-**Setup script hangs:**
-- The script may be waiting for user input (password prompt)
-- Check the screen session: `sudo screen -r dbsetup` or `sudo screen -r appsetup`
-- Check the log file for the last action
+**Database authentication failed but network OK:**
+```
+Network is reachable but database authentication failed
+```
+- **Solution:** Verify password matches on both VMs:
+  ```bash
+  # On database VM
+  sudo cat /root/db-credentials.txt
+
+  # On application VM
+  sudo grep DB_PASSWORD /opt/todolist-api/.env
+  ```
+- Reset password if needed:
+  ```bash
+  # On database VM
+  DB_PASSWORD=$(sudo grep "Database Password:" /root/db-credentials.txt | awk '{print $3}')
+  sudo -u postgres psql -c "ALTER USER todolist WITH PASSWORD '$DB_PASSWORD';"
+  sudo systemctl reload postgresql-15
+  ```
+
+**API not accessible from internet (timeout):**
+```
+curl: (28) Failed to connect to <public-ip> port 8080 after timeout
+```
+- **Solution:** Add OCI Security List ingress rule for port 8080
+  1. Go to OCI Console → Networking → Virtual Cloud Networks
+  2. Select your VCN → Security Lists → Security List for application subnet
+  3. Add Ingress Rule: Source CIDR `0.0.0.0/0`, Protocol TCP, Port `8080`
+- Verify application VM firewall (script does this automatically):
+  ```bash
+  sudo firewall-cmd --list-all | grep 8080
+  ```
+
+**SELinux permission denied:**
+```
+Failed at step EXEC spawning /opt/todolist-api/todolist-api: Permission denied
+```
+- **Solution:** Script now automatically sets SELinux context
+- If you see this error, manually fix with:
+  ```bash
+  sudo chcon -t bin_t /opt/todolist-api/todolist-api
+  sudo setenforce 1  # Re-enable SELinux
+  sudo systemctl restart todolist-api
+  ```
 
 **Service fails to start:**
 ```
 Job for todolist-api.service failed
 ```
-- Check logs: `sudo journalctl -u todolist-api -n 50`
-- Verify .env file: `sudo cat /opt/todolist/.env`
-- Test database connection manually from `/opt/todolist` directory
+- Check logs for specific error: `sudo journalctl -u todolist-api -n 50`
+- Common causes and solutions:
+  - **Database connection failed:** Check network and credentials (see above)
+  - **GORM migration error:** Database may need to be reset (see below)
+  - **Port already in use:** Check if another process is using port 8080
+
+**GORM migration constraint error:**
+```
+ERROR: constraint "uni_users_email" of relation "users" does not exist
+```
+- **Solution:** Reset database and let GORM AutoMigrate create schema:
+  ```bash
+  # On database VM - drop and recreate database
+  sudo -u postgres psql -c "DROP DATABASE todolist;"
+  sudo -u postgres psql -c "CREATE DATABASE todolist OWNER todolist;"
+
+  # On application VM - restart service (migrations run automatically)
+  sudo systemctl restart todolist-api
+  ```
+
+**Go download fails (wrong architecture):**
+```
+Failed to download Go 1.24.10
+```
+- **Solution:** Script now auto-detects architecture (arm64 vs amd64)
+- Verify with: `uname -m` (should show aarch64 or x86_64)
+- Re-upload latest script if you see this error
 
 ### SSH Keep-Alive Configuration
 

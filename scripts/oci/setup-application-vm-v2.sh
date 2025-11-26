@@ -262,10 +262,10 @@ install_dependencies() {
 
     if [ "$OS" = "oracle" ]; then
         dnf update -y
-        dnf install -y git wget tar curl make
+        dnf install -y git wget tar curl make postgresql
     else
         apt-get update
-        apt-get install -y git wget tar curl make
+        apt-get install -y git wget tar curl make postgresql-client
     fi
 
     mark_complete "dependencies_installed"
@@ -553,65 +553,75 @@ create_log_directory() {
     log_success "Log directory created"
 }
 
-# Run database migrations
-run_migrations() {
-    if is_complete "migrations_run"; then
-        log_info "Database migrations already run (skipping)"
+# Test database connection
+test_database_connection() {
+    if is_complete "database_tested"; then
+        log_info "Database connection already tested (skipping)"
         return
     fi
 
-    log_step "Running database migrations..."
+    log_step "Testing database connection..."
 
     cd ${APP_DIR}
 
-    # Load environment variables for migration
+    # Load environment variables
     export $(grep -v '^#' ${APP_DIR}/.env | xargs)
 
-    # Test database connection first
-    log_info "Testing database connection..."
     log_info "Connection details: ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 
-    # Check if we can reach the database host
-    log_info "Checking network connectivity to ${DB_HOST}:${DB_PORT}..."
+    # Install netcat if needed
     if ! command -v nc &> /dev/null; then
+        log_info "Installing netcat for network testing..."
         dnf install -y nc 2>/dev/null || yum install -y nc 2>/dev/null || apt-get install -y netcat 2>/dev/null
     fi
 
+    # Check if we can reach the database host
+    log_info "Checking network connectivity to ${DB_HOST}:${DB_PORT}..."
     if nc -z -w 5 ${DB_HOST} ${DB_PORT} 2>/dev/null; then
         log_success "Network connectivity OK - port ${DB_PORT} is reachable"
     else
         log_error "Cannot reach ${DB_HOST}:${DB_PORT}"
+        log_error ""
         log_error "Troubleshooting steps:"
         log_error "  1. Verify database VM is running: sudo systemctl status postgresql-15"
-        log_error "  2. Check database VM firewall: sudo firewall-cmd --list-all (or sudo ufw status)"
-        log_error "  3. Verify OCI Security List allows port 5432 from this VM's subnet"
-        log_error "  4. Check PostgreSQL is listening: sudo netstat -plnt | grep 5432 (on DB VM)"
-        log_error "  5. Verify pg_hba.conf allows connections from this IP"
+        log_error "  2. Check database VM firewall allows port 5432:"
+        log_error "     sudo firewall-cmd --list-all (or sudo ufw status)"
+        log_error "  3. Add firewall rule if missing:"
+        log_error "     sudo firewall-cmd --permanent --add-port=5432/tcp"
+        log_error "     sudo firewall-cmd --reload"
+        log_error "  4. Verify OCI Security List allows port 5432 from this VM's subnet"
+        log_error "     Go to OCI Console → VCN → Security Lists → Add Ingress Rule"
+        log_error "     Source CIDR: 10.0.0.0/24, Protocol: TCP, Port: 5432"
+        log_error "  5. Check PostgreSQL is listening: sudo netstat -plnt | grep 5432 (on DB VM)"
+        log_error ""
         exit 1
     fi
 
-    # Test actual database connection
-    if sudo -u ${APP_USER} bash -c "export \$(cat ${APP_DIR}/.env | grep -v '^#' | xargs) && cd ${APP_DIR} && ./bin/migrate version" &> /dev/null; then
-        log_success "Database connection successful"
+    # Test actual database connection using psql
+    log_info "Testing database authentication..."
+    if command -v psql &> /dev/null; then
+        if PGPASSWORD="${DB_PASSWORD}" psql -h ${DB_HOST} -U ${DB_USER} -d ${DB_NAME} -c "SELECT 1;" &> /dev/null; then
+            log_success "Database connection successful"
+        else
+            log_error "Network is reachable but database authentication failed"
+            log_error ""
+            log_error "Check on database VM:"
+            log_error "  1. Database exists: sudo -u postgres psql -c '\\l' | grep ${DB_NAME}"
+            log_error "  2. User exists: sudo -u postgres psql -c '\\du' | grep ${DB_USER}"
+            log_error "  3. Password is correct (check /root/db-credentials.txt on DB VM)"
+            log_error "  4. pg_hba.conf allows connections:"
+            log_error "     sudo cat /var/lib/pgsql/15/data/pg_hba.conf | grep -v '^#'"
+            log_error ""
+            exit 1
+        fi
     else
-        log_error "Network is reachable but database authentication failed"
-        log_error "Check:"
-        log_error "  - Database password is correct"
-        log_error "  - Database '${DB_NAME}' exists on ${DB_HOST}"
-        log_error "  - User '${DB_USER}' has access to database '${DB_NAME}'"
-        log_error "  - pg_hba.conf allows password authentication from this IP"
-        exit 1
+        log_warn "psql not installed, skipping authentication test"
+        log_warn "Database authentication will be tested when the service starts"
     fi
 
-    # Run migrations
-    log_info "Applying migrations..."
-    if sudo -u ${APP_USER} bash -c "export \$(cat ${APP_DIR}/.env | grep -v '^#' | xargs) && cd ${APP_DIR} && ./bin/migrate up"; then
-        mark_complete "migrations_run"
-        log_success "Migrations completed"
-    else
-        log_error "Migration failed"
-        exit 1
-    fi
+    mark_complete "database_tested"
+    log_success "Database connection test passed"
+    log_info "Note: Database migrations will run automatically when the application starts"
 }
 
 # Create systemd service
@@ -697,6 +707,32 @@ configure_firewall() {
     mark_complete "firewall_configured"
 }
 
+# Configure SELinux
+configure_selinux() {
+    if is_complete "selinux_configured"; then
+        log_info "SELinux already configured (skipping)"
+        return
+    fi
+
+    log_step "Configuring SELinux..."
+
+    # Check if SELinux is enabled
+    if command -v getenforce &> /dev/null; then
+        SELINUX_STATUS=$(getenforce)
+        if [ "$SELINUX_STATUS" != "Disabled" ]; then
+            log_info "SELinux is ${SELINUX_STATUS}, setting correct context for binary..."
+            chcon -t bin_t ${APP_DIR}/${APP_NAME} 2>/dev/null || true
+            log_success "SELinux context set for application binary"
+        else
+            log_info "SELinux is disabled, skipping"
+        fi
+    else
+        log_info "SELinux not available (Ubuntu), skipping"
+    fi
+
+    mark_complete "selinux_configured"
+}
+
 # Start application
 start_application() {
     log_step "Starting application..."
@@ -777,10 +813,13 @@ Test Commands:
     -d '{"email":"test@example.com","password":"SecurePass123!","firstName":"Test","lastName":"User"}'
 
 ${YELLOW}Next Steps:${NC}
-1. Set up Nginx reverse proxy (optional)
-2. Configure SSL with Let's Encrypt (optional)
-3. Test the API endpoints
-4. Set up monitoring and backups
+1. Configure OCI Security List to allow port 8080 from internet:
+   - Go to OCI Console → VCN → Security Lists
+   - Add Ingress Rule: Source 0.0.0.0/0, TCP, Port 8080
+2. Test the API endpoints from your laptop
+3. Set up Nginx reverse proxy (optional)
+4. Configure SSL with Let's Encrypt (optional)
+5. Set up monitoring and backups
 
 ${YELLOW}Important Files:${NC}
   Config: ${APP_DIR}/.env
@@ -794,6 +833,9 @@ ${YELLOW}Security Notes:${NC}
 - JWT secret has been auto-generated
 - Default user is 'todolist' with restricted permissions
 - Application runs with systemd security hardening
+- SELinux configured for application execution (Oracle Linux)
+- Firewall configured to allow ports 8080, 80, 443
+- Database migrations run automatically on application startup
 
 EOF
 }
@@ -847,9 +889,10 @@ main() {
     build_application
     create_env_file
     create_log_directory
-    run_migrations
+    test_database_connection
     install_systemd_service
     configure_firewall
+    configure_selinux
     start_application
     test_application
 
