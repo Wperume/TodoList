@@ -111,7 +111,7 @@ Before you begin, ensure you have the following installed on your system:
 
 | Tool | Version | Purpose |
 |------|---------|---------|
-| **Go** | 1.25.3+ | Build and run the application |
+| **Go** | 1.24+ | Build and run the application |
 | **Git** | 2.0+ | Clone the repository |
 
 #### Optional (Choose based on your setup)
