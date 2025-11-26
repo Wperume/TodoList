@@ -1865,6 +1865,100 @@ sudo systemctl daemon-reload
 
 Then re-run the setup scripts.
 
+### Updating the Application (Deploying New Changes)
+
+After making code changes and pushing to your Git repository, use the automated update script to deploy changes to the application VM.
+
+#### Quick Update
+
+```bash
+# SSH to application VM
+ssh opc@<application-vm-ip>
+
+# Run update script (requires sudo)
+sudo /opt/todolist-api/scripts/oci/update-application.sh
+```
+
+The update script will:
+1. ✅ Stop the service
+2. ✅ Backup the current binary
+3. ✅ Pull latest code from Git
+4. ✅ Show commit changes (current → target)
+5. ✅ Regenerate Swagger documentation
+6. ✅ Rebuild the application
+7. ✅ Configure SELinux (if enabled)
+8. ✅ Start the service
+9. ✅ Verify service is running
+10. ✅ Automatically rollback if deployment fails
+
+#### Update to Specific Branch
+
+```bash
+# Update to a different branch
+sudo /opt/todolist-api/scripts/oci/update-application.sh develop
+```
+
+#### Manual Update Steps
+
+If you prefer manual control or need to troubleshoot:
+
+```bash
+# 1. Stop the service
+sudo systemctl stop todolist-api
+
+# 2. Navigate to application directory
+cd /opt/todolist-api
+
+# 3. Pull latest changes
+sudo -u todolist git pull origin main
+
+# 4. Regenerate Swagger docs (important!)
+sudo -u todolist /usr/local/go/bin/swag init -g cmd/server/main.go -o docs
+
+# 5. Rebuild application
+sudo -u todolist bash -c "export PATH=/usr/local/go/bin:\$PATH && go build -o todolist-api cmd/server/main.go"
+
+# 6. Set SELinux context (if needed)
+sudo chcon -t bin_t /opt/todolist-api/todolist-api
+
+# 7. Start the service
+sudo systemctl start todolist-api
+
+# 8. Verify
+sudo systemctl status todolist-api
+sudo journalctl -u todolist-api -f
+```
+
+#### First-Time Setup of Update Script
+
+The update script should be included when you first run the setup script. If it's missing:
+
+```bash
+# Ensure script is present
+cd /opt/todolist-api
+sudo -u todolist git pull origin main
+
+# Make executable
+sudo chmod +x /opt/todolist-api/scripts/oci/update-application.sh
+```
+
+#### Rollback on Failure
+
+If an update fails, the script automatically attempts to restore the previous backup. You can also manually rollback:
+
+```bash
+# List available backups
+ls -lh /opt/todolist-api/todolist-api.backup.*
+
+# Restore a specific backup
+sudo systemctl stop todolist-api
+sudo -u todolist cp /opt/todolist-api/todolist-api.backup.20250126_143022 /opt/todolist-api/todolist-api
+sudo chcon -t bin_t /opt/todolist-api/todolist-api
+sudo systemctl start todolist-api
+```
+
+The update script keeps the 5 most recent backups automatically.
+
 ### Verifying Deployment
 
 After successful setup, test the API:
