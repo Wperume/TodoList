@@ -1176,13 +1176,25 @@ For development and testing, use the provided script to generate self-signed cer
 # Generate certificates for localhost
 ./scripts/generate-certs.sh localhost
 
-# Or for a specific domain
+# For a specific domain
 ./scripts/generate-certs.sh example.com
+
+# For an IP address (OCI/cloud deployments)
+./scripts/generate-certs.sh 192.168.1.100
+
+# With specific ownership (for systemd services running as non-root)
+sudo ./scripts/generate-certs.sh 192.168.1.100 todolist
 ```
 
 This creates:
-- `certs/server.key` - Private key (2048-bit RSA)
-- `certs/server.crt` - Self-signed certificate (valid for 365 days)
+- `certs/server.key` - Private key (2048-bit RSA, permissions 600)
+- `certs/server.crt` - Self-signed certificate (valid for 365 days, permissions 644)
+
+**Script features:**
+- Auto-detects IP addresses vs domain names
+- Creates proper Subject Alternative Names (SAN) for both IPs and domains
+- Optionally sets ownership (second parameter) - useful for systemd services
+- Sets secure file permissions automatically
 
 **Note**: Self-signed certificates will show browser warnings. For production, use certificates from a trusted CA like Let's Encrypt.
 
