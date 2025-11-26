@@ -1,6 +1,6 @@
 basePath: /api/v1
 definitions:
-  internal_handlers.HealthCheck:
+  handlers.HealthCheck:
     properties:
       details:
         additionalProperties: true
@@ -10,11 +10,11 @@ definitions:
       status:
         type: string
     type: object
-  internal_handlers.HealthResponse:
+  handlers.HealthResponse:
     properties:
       checks:
         additionalProperties:
-          $ref: '#/definitions/internal_handlers.HealthCheck'
+          $ref: '#/definitions/handlers.HealthCheck'
         type: object
       status:
         type: string
@@ -25,7 +25,7 @@ definitions:
       version:
         type: string
     type: object
-  todolist-api_internal_models.AuthResponse:
+  models.AuthResponse:
     properties:
       accessToken:
         type: string
@@ -38,9 +38,9 @@ definitions:
         description: Always "Bearer"
         type: string
       user:
-        $ref: '#/definitions/todolist-api_internal_models.UserInfo'
+        $ref: '#/definitions/models.UserInfo'
     type: object
-  todolist-api_internal_models.ChangePasswordRequest:
+  models.ChangePasswordRequest:
     properties:
       currentPassword:
         type: string
@@ -52,7 +52,38 @@ definitions:
     - currentPassword
     - newPassword
     type: object
-  todolist-api_internal_models.ErrorResponse:
+  models.CreateTodoListRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+    required:
+    - name
+    type: object
+  models.CreateTodoRequest:
+    properties:
+      description:
+        maxLength: 500
+        minLength: 1
+        type: string
+      dueDate:
+        type: string
+      priority:
+        allOf:
+        - $ref: '#/definitions/models.Priority'
+        enum:
+        - low
+        - medium
+        - high
+    required:
+    - description
+    - priority
+    type: object
+  models.ErrorResponse:
     properties:
       code:
         type: string
@@ -62,7 +93,7 @@ definitions:
       message:
         type: string
     type: object
-  todolist-api_internal_models.LoginRequest:
+  models.LoginRequest:
     properties:
       email:
         type: string
@@ -72,14 +103,44 @@ definitions:
     - email
     - password
     type: object
-  todolist-api_internal_models.RefreshTokenRequest:
+  models.PaginatedListsResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.TodoList'
+        type: array
+      pagination:
+        $ref: '#/definitions/models.Pagination'
+    type: object
+  models.Pagination:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      totalItems:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
+  models.Priority:
+    enum:
+    - low
+    - medium
+    - high
+    type: string
+    x-enum-varnames:
+    - PriorityLow
+    - PriorityMedium
+    - PriorityHigh
+  models.RefreshTokenRequest:
     properties:
       refreshToken:
         type: string
     required:
     - refreshToken
     type: object
-  todolist-api_internal_models.RegisterRequest:
+  models.RegisterRequest:
     properties:
       email:
         maxLength: 255
@@ -99,7 +160,60 @@ definitions:
     - email
     - password
     type: object
-  todolist-api_internal_models.UpdateProfileRequest:
+  models.Todo:
+    properties:
+      completed:
+        type: boolean
+      completedAt:
+        type: string
+      createdAt:
+        type: string
+      description:
+        maxLength: 500
+        minLength: 1
+        type: string
+      dueDate:
+        type: string
+      id:
+        type: string
+      listId:
+        type: string
+      priority:
+        allOf:
+        - $ref: '#/definitions/models.Priority'
+        enum:
+        - low
+        - medium
+        - high
+      updatedAt:
+        type: string
+    required:
+    - description
+    - priority
+    type: object
+  models.TodoList:
+    properties:
+      createdAt:
+        type: string
+      description:
+        maxLength: 500
+        type: string
+      id:
+        type: string
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+      todoCount:
+        type: integer
+      updatedAt:
+        type: string
+      userId:
+        type: string
+    required:
+    - name
+    type: object
+  models.UpdateProfileRequest:
     properties:
       firstName:
         maxLength: 100
@@ -108,7 +222,35 @@ definitions:
         maxLength: 100
         type: string
     type: object
-  todolist-api_internal_models.UserInfo:
+  models.UpdateTodoListRequest:
+    properties:
+      description:
+        maxLength: 500
+        type: string
+      name:
+        maxLength: 100
+        minLength: 1
+        type: string
+    type: object
+  models.UpdateTodoRequest:
+    properties:
+      completed:
+        type: boolean
+      description:
+        maxLength: 500
+        minLength: 1
+        type: string
+      dueDate:
+        type: string
+      priority:
+        allOf:
+        - $ref: '#/definitions/models.Priority'
+        enum:
+        - low
+        - medium
+        - high
+    type: object
+  models.UserInfo:
     properties:
       email:
         type: string
@@ -119,9 +261,9 @@ definitions:
       lastName:
         type: string
       role:
-        $ref: '#/definitions/todolist-api_internal_models.UserRole'
+        $ref: '#/definitions/models.UserRole'
     type: object
-  todolist-api_internal_models.UserRole:
+  models.UserRole:
     enum:
     - user
     - admin
@@ -153,22 +295,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/todolist-api_internal_models.LoginRequest'
+          $ref: '#/definitions/models.LoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.AuthResponse'
+            $ref: '#/definitions/models.AuthResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Login
       tags:
       - Authentication
@@ -183,7 +325,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/todolist-api_internal_models.RefreshTokenRequest'
+          $ref: '#/definitions/models.RefreshTokenRequest'
       produces:
       - application/json
       responses:
@@ -192,11 +334,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Logout
       tags:
       - Authentication
@@ -211,7 +353,7 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/todolist-api_internal_models.ChangePasswordRequest'
+          $ref: '#/definitions/models.ChangePasswordRequest'
       produces:
       - application/json
       responses:
@@ -220,11 +362,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Change password
@@ -239,11 +381,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.UserInfo'
+            $ref: '#/definitions/models.UserInfo'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get user profile
@@ -259,22 +401,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/todolist-api_internal_models.UpdateProfileRequest'
+          $ref: '#/definitions/models.UpdateProfileRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.UserInfo'
+            $ref: '#/definitions/models.UserInfo'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Update user profile
@@ -291,22 +433,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/todolist-api_internal_models.RefreshTokenRequest'
+          $ref: '#/definitions/models.RefreshTokenRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.AuthResponse'
+            $ref: '#/definitions/models.AuthResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Refresh access token
       tags:
       - Authentication
@@ -321,22 +463,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/todolist-api_internal_models.RegisterRequest'
+          $ref: '#/definitions/models.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.AuthResponse'
+            $ref: '#/definitions/models.AuthResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/todolist-api_internal_models.ErrorResponse'
+            $ref: '#/definitions/models.ErrorResponse'
       summary: Register a new user
       tags:
       - Authentication
@@ -365,11 +507,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_handlers.HealthResponse'
+            $ref: '#/definitions/handlers.HealthResponse'
         "503":
           description: Service Unavailable
           schema:
-            $ref: '#/definitions/internal_handlers.HealthResponse'
+            $ref: '#/definitions/handlers.HealthResponse'
       summary: Detailed health check
       tags:
       - Health
@@ -409,6 +551,385 @@ paths:
       summary: Readiness probe
       tags:
       - Health
+  /lists:
+    get:
+      description: Get all todo lists for the authenticated user with pagination
+      parameters:
+      - description: 'Page number (default: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Items per page (default: 20, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PaginatedListsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get all todo lists
+      tags:
+      - Lists
+    post:
+      consumes:
+      - application/json
+      description: Create a new todo list for the authenticated user
+      parameters:
+      - description: List details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateTodoListRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.TodoList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a new todo list
+      tags:
+      - Lists
+  /lists/{listId}:
+    delete:
+      description: Delete a specific todo list and all its todos
+      parameters:
+      - description: List ID (UUID)
+        in: path
+        name: listId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete a todo list
+      tags:
+      - Lists
+    get:
+      description: Get a specific todo list by ID
+      parameters:
+      - description: List ID (UUID)
+        in: path
+        name: listId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TodoList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get a specific todo list
+      tags:
+      - Lists
+    put:
+      consumes:
+      - application/json
+      description: Update a specific todo list
+      parameters:
+      - description: List ID (UUID)
+        in: path
+        name: listId
+        required: true
+        type: string
+      - description: Updated list details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateTodoListRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.TodoList'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update a todo list
+      tags:
+      - Lists
+  /lists/{listId}/todos:
+    get:
+      description: Get all todos in a specific list with optional filtering and sorting
+      parameters:
+      - description: List ID (UUID)
+        in: path
+        name: listId
+        required: true
+        type: string
+      - description: Filter by priority (low, medium, high)
+        in: query
+        name: priority
+        type: string
+      - description: Filter by completion status
+        in: query
+        name: completed
+        type: boolean
+      - description: Sort by field (due_date, priority, created_at)
+        in: query
+        name: sort_by
+        type: string
+      - description: Sort order (asc, desc)
+        in: query
+        name: sort_order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Todo'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get todos in a list
+      tags:
+      - Todos
+    post:
+      consumes:
+      - application/json
+      description: Create a new todo item in a specific list
+      parameters:
+      - description: List ID (UUID)
+        in: path
+        name: listId
+        required: true
+        type: string
+      - description: Todo details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateTodoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Todo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create a new todo
+      tags:
+      - Todos
+  /lists/{listId}/todos/{todoId}:
+    delete:
+      description: Delete a specific todo item
+      parameters:
+      - description: List ID (UUID)
+        in: path
+        name: listId
+        required: true
+        type: string
+      - description: Todo ID (UUID)
+        in: path
+        name: todoId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete a todo
+      tags:
+      - Todos
+    get:
+      description: Get a specific todo item by ID
+      parameters:
+      - description: List ID (UUID)
+        in: path
+        name: listId
+        required: true
+        type: string
+      - description: Todo ID (UUID)
+        in: path
+        name: todoId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Todo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get a specific todo
+      tags:
+      - Todos
+    put:
+      consumes:
+      - application/json
+      description: Update a specific todo item
+      parameters:
+      - description: List ID (UUID)
+        in: path
+        name: listId
+        required: true
+        type: string
+      - description: Todo ID (UUID)
+        in: path
+        name: todoId
+        required: true
+        type: string
+      - description: Updated todo details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateTodoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Todo'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update a todo
+      tags:
+      - Todos
 securityDefinitions:
   Bearer:
     description: Type "Bearer" followed by a space and JWT token.

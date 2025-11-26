@@ -25,6 +25,7 @@ A REST API service for managing multiple named todo lists with full CRUD operati
 - **Security Hardened**: XSS protection, CORS, security headers, request size limits, UUID validation, bcrypt password hashing
 - **HTTPS/TLS Support**: Secure communication with TLS 1.2/1.3, configurable cipher suites, and HTTP-to-HTTPS redirect
 - **Health Checks**: Comprehensive health endpoints with database connectivity, migration status, and system metrics
+- **API Documentation**: Interactive Swagger/OpenAPI documentation for all endpoints
 - **Graceful Shutdown**: Clean shutdown with proper resource cleanup and in-flight request completion
 - **CI/CD Pipeline**: Automated testing, building, security scanning, and deployment to Oracle Cloud Infrastructure
 
@@ -2059,8 +2060,8 @@ This is sufficient for running the TodoList API with database on separate VMs at
 - ✅ ~~Add HTTPS/TLS support~~ - **COMPLETED**
 - ✅ ~~Add JWT authentication and authorization~~ - **COMPLETED**
 - ✅ ~~Add health check with database connectivity status~~ - **COMPLETED**
+- ✅ ~~Add API documentation UI (Swagger/ReDoc)~~ - **COMPLETED**
 - Add metrics and monitoring (Prometheus)
-- Add API documentation UI (Swagger/ReDoc)
 - Add database connection pooling tuning
 - Add Let's Encrypt ACME support for automatic certificate management
 - Add email verification for new user accounts

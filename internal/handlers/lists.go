@@ -23,6 +23,16 @@ func NewListHandler(store storage.Store) *ListHandler {
 }
 
 // GetAllLists handles GET /lists
+// @Summary Get all todo lists
+// @Description Get all todo lists for the authenticated user with pagination
+// @Tags Lists
+// @Produce json
+// @Param page query int false "Page number (default: 1)"
+// @Param limit query int false "Items per page (default: 20, max: 100)"
+// @Success 200 {object} models.PaginatedListsResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Security Bearer
+// @Router /lists [get]
 func (h *ListHandler) GetAllLists(c *gin.Context) {
 	// Get user ID (or default for unauthenticated access)
 	userID := middleware.GetUserIDOrDefault(c)
@@ -54,6 +64,18 @@ func (h *ListHandler) GetAllLists(c *gin.Context) {
 }
 
 // CreateList handles POST /lists
+// @Summary Create a new todo list
+// @Description Create a new todo list for the authenticated user
+// @Tags Lists
+// @Accept json
+// @Produce json
+// @Param request body models.CreateTodoListRequest true "List details"
+// @Success 201 {object} models.TodoList
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 409 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Security Bearer
+// @Router /lists [post]
 func (h *ListHandler) CreateList(c *gin.Context) {
 	// Get user ID (or default for unauthenticated access)
 	userID := middleware.GetUserIDOrDefault(c)
@@ -88,6 +110,17 @@ func (h *ListHandler) CreateList(c *gin.Context) {
 }
 
 // GetListByID handles GET /lists/:listId
+// @Summary Get a specific todo list
+// @Description Get a specific todo list by ID
+// @Tags Lists
+// @Produce json
+// @Param listId path string true "List ID (UUID)"
+// @Success 200 {object} models.TodoList
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Security Bearer
+// @Router /lists/{listId} [get]
 func (h *ListHandler) GetListByID(c *gin.Context) {
 	// Get user ID (or default for unauthenticated access)
 	userID := middleware.GetUserIDOrDefault(c)
@@ -121,6 +154,20 @@ func (h *ListHandler) GetListByID(c *gin.Context) {
 }
 
 // UpdateList handles PUT /lists/:listId
+// @Summary Update a todo list
+// @Description Update a specific todo list
+// @Tags Lists
+// @Accept json
+// @Produce json
+// @Param listId path string true "List ID (UUID)"
+// @Param request body models.UpdateTodoListRequest true "Updated list details"
+// @Success 200 {object} models.TodoList
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 409 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Security Bearer
+// @Router /lists/{listId} [put]
 func (h *ListHandler) UpdateList(c *gin.Context) {
 	// Get user ID (or default for unauthenticated access)
 	userID := middleware.GetUserIDOrDefault(c)
@@ -171,6 +218,17 @@ func (h *ListHandler) UpdateList(c *gin.Context) {
 }
 
 // DeleteList handles DELETE /lists/:listId
+// @Summary Delete a todo list
+// @Description Delete a specific todo list and all its todos
+// @Tags Lists
+// @Produce json
+// @Param listId path string true "List ID (UUID)"
+// @Success 204 "No Content"
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Security Bearer
+// @Router /lists/{listId} [delete]
 func (h *ListHandler) DeleteList(c *gin.Context) {
 	// Get user ID (or default for unauthenticated access)
 	userID := middleware.GetUserIDOrDefault(c)

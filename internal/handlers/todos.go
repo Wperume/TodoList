@@ -22,6 +22,21 @@ func NewTodoHandler(store storage.Store) *TodoHandler {
 }
 
 // GetTodosByList handles GET /lists/:listId/todos
+// @Summary Get todos in a list
+// @Description Get all todos in a specific list with optional filtering and sorting
+// @Tags Todos
+// @Produce json
+// @Param listId path string true "List ID (UUID)"
+// @Param priority query string false "Filter by priority (low, medium, high)"
+// @Param completed query boolean false "Filter by completion status"
+// @Param sort_by query string false "Sort by field (due_date, priority, created_at)"
+// @Param sort_order query string false "Sort order (asc, desc)"
+// @Success 200 {array} models.Todo
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Security Bearer
+// @Router /lists/{listId}/todos [get]
 func (h *TodoHandler) GetTodosByList(c *gin.Context) {
 	// Get authenticated user ID
 	userID := middleware.GetUserIDOrDefault(c)
@@ -71,6 +86,19 @@ func (h *TodoHandler) GetTodosByList(c *gin.Context) {
 }
 
 // CreateTodo handles POST /lists/:listId/todos
+// @Summary Create a new todo
+// @Description Create a new todo item in a specific list
+// @Tags Todos
+// @Accept json
+// @Produce json
+// @Param listId path string true "List ID (UUID)"
+// @Param request body models.CreateTodoRequest true "Todo details"
+// @Success 201 {object} models.Todo
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Security Bearer
+// @Router /lists/{listId}/todos [post]
 func (h *TodoHandler) CreateTodo(c *gin.Context) {
 	// Get authenticated user ID
 	userID := middleware.GetUserIDOrDefault(c)
@@ -114,6 +142,18 @@ func (h *TodoHandler) CreateTodo(c *gin.Context) {
 }
 
 // GetTodoByID handles GET /lists/:listId/todos/:todoId
+// @Summary Get a specific todo
+// @Description Get a specific todo item by ID
+// @Tags Todos
+// @Produce json
+// @Param listId path string true "List ID (UUID)"
+// @Param todoId path string true "Todo ID (UUID)"
+// @Success 200 {object} models.Todo
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Security Bearer
+// @Router /lists/{listId}/todos/{todoId} [get]
 func (h *TodoHandler) GetTodoByID(c *gin.Context) {
 	// Get authenticated user ID
 	userID := middleware.GetUserIDOrDefault(c)
@@ -163,6 +203,20 @@ func (h *TodoHandler) GetTodoByID(c *gin.Context) {
 }
 
 // UpdateTodo handles PUT /lists/:listId/todos/:todoId
+// @Summary Update a todo
+// @Description Update a specific todo item
+// @Tags Todos
+// @Accept json
+// @Produce json
+// @Param listId path string true "List ID (UUID)"
+// @Param todoId path string true "Todo ID (UUID)"
+// @Param request body models.UpdateTodoRequest true "Updated todo details"
+// @Success 200 {object} models.Todo
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Security Bearer
+// @Router /lists/{listId}/todos/{todoId} [put]
 func (h *TodoHandler) UpdateTodo(c *gin.Context) {
 	// Get authenticated user ID
 	userID := middleware.GetUserIDOrDefault(c)
@@ -222,6 +276,18 @@ func (h *TodoHandler) UpdateTodo(c *gin.Context) {
 }
 
 // DeleteTodo handles DELETE /lists/:listId/todos/:todoId
+// @Summary Delete a todo
+// @Description Delete a specific todo item
+// @Tags Todos
+// @Produce json
+// @Param listId path string true "List ID (UUID)"
+// @Param todoId path string true "Todo ID (UUID)"
+// @Success 204 "No Content"
+// @Failure 400 {object} models.ErrorResponse
+// @Failure 404 {object} models.ErrorResponse
+// @Failure 500 {object} models.ErrorResponse
+// @Security Bearer
+// @Router /lists/{listId}/todos/{todoId} [delete]
 func (h *TodoHandler) DeleteTodo(c *gin.Context) {
 	// Get authenticated user ID
 	userID := middleware.GetUserIDOrDefault(c)
