@@ -375,21 +375,35 @@ clone_repository() {
 
     log_step "Cloning repository..."
 
-    # Create directory
-    mkdir -p ${APP_DIR}
+    # Check if directory exists but is not a git repo
+    if [ -d "${APP_DIR}" ] && [ ! -d "${APP_DIR}/.git" ]; then
+        log_warn "Directory exists but is not a git repository, removing..."
+        rm -rf ${APP_DIR}
+    fi
 
     # Clone repository
     if [ -d "${APP_DIR}/.git" ]; then
         log_info "Repository already exists, pulling latest..."
         cd ${APP_DIR}
         git pull origin ${GIT_BRANCH}
+        chown -R ${APP_USER}:${APP_USER} ${APP_DIR}
     else
         log_info "Cloning from ${GIT_REPO}..."
-        git clone -b ${GIT_BRANCH} ${GIT_REPO} ${APP_DIR}
+        if ! git clone -b ${GIT_BRANCH} ${GIT_REPO} ${APP_DIR}; then
+            log_error "Failed to clone repository"
+            log_error "Git URL: ${GIT_REPO}"
+            log_error "Branch: ${GIT_BRANCH}"
+            exit 1
+        fi
+        chown -R ${APP_USER}:${APP_USER} ${APP_DIR}
     fi
 
-    # Change ownership
-    chown -R ${APP_USER}:${APP_USER} ${APP_DIR}
+    # Verify clone succeeded
+    if [ ! -f "${APP_DIR}/go.mod" ]; then
+        log_error "Repository cloned but go.mod not found"
+        log_error "This may not be a valid Go project repository"
+        exit 1
+    fi
 
     mark_complete "repository_cloned"
     log_success "Repository cloned"
@@ -411,26 +425,51 @@ build_application() {
     cd ${APP_DIR}
 
     # Build as app user
+    log_info "Downloading Go dependencies..."
     sudo -u ${APP_USER} bash << EOF
 export PATH=\$PATH:/usr/local/go/bin:\$HOME/go/bin
 cd ${APP_DIR}
 
 # Download dependencies
-log_info "Downloading Go dependencies..."
 go mod download
+EOF
+
+    if [ $? -ne 0 ]; then
+        log_error "Failed to download Go dependencies"
+        exit 1
+    fi
+
+    log_info "Building server binary..."
+    sudo -u ${APP_USER} bash << EOF
+export PATH=\$PATH:/usr/local/go/bin:\$HOME/go/bin
+cd ${APP_DIR}
 
 # Build server binary
-log_info "Building server binary..."
 go build -o ${APP_NAME} ./cmd/server
+EOF
+
+    if [ $? -ne 0 ]; then
+        log_error "Failed to build server binary"
+        exit 1
+    fi
+
+    log_info "Building migration tool..."
+    sudo -u ${APP_USER} bash << EOF
+export PATH=\$PATH:/usr/local/go/bin:\$HOME/go/bin
+cd ${APP_DIR}
 
 # Build migration tool
-log_info "Building migration tool..."
 mkdir -p bin
 go build -o bin/migrate ./cmd/migrate
-
-# Make executable
-chmod +x ${APP_NAME} bin/migrate
 EOF
+
+    if [ $? -ne 0 ]; then
+        log_error "Failed to build migration tool"
+        exit 1
+    fi
+
+    # Make executable
+    chmod +x ${APP_DIR}/${APP_NAME} ${APP_DIR}/bin/migrate
 
     if [ -f "${APP_DIR}/${APP_NAME}" ]; then
         mark_complete "application_built"
@@ -530,11 +569,37 @@ run_migrations() {
 
     # Test database connection first
     log_info "Testing database connection..."
+    log_info "Connection details: ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+
+    # Check if we can reach the database host
+    log_info "Checking network connectivity to ${DB_HOST}:${DB_PORT}..."
+    if ! command -v nc &> /dev/null; then
+        dnf install -y nc 2>/dev/null || yum install -y nc 2>/dev/null || apt-get install -y netcat 2>/dev/null
+    fi
+
+    if nc -z -w 5 ${DB_HOST} ${DB_PORT} 2>/dev/null; then
+        log_success "Network connectivity OK - port ${DB_PORT} is reachable"
+    else
+        log_error "Cannot reach ${DB_HOST}:${DB_PORT}"
+        log_error "Troubleshooting steps:"
+        log_error "  1. Verify database VM is running: sudo systemctl status postgresql-15"
+        log_error "  2. Check database VM firewall: sudo firewall-cmd --list-all (or sudo ufw status)"
+        log_error "  3. Verify OCI Security List allows port 5432 from this VM's subnet"
+        log_error "  4. Check PostgreSQL is listening: sudo netstat -plnt | grep 5432 (on DB VM)"
+        log_error "  5. Verify pg_hba.conf allows connections from this IP"
+        exit 1
+    fi
+
+    # Test actual database connection
     if sudo -u ${APP_USER} bash -c "source ${APP_DIR}/.env && cd ${APP_DIR} && ./bin/migrate version" &> /dev/null; then
         log_success "Database connection successful"
     else
-        log_error "Cannot connect to database. Check credentials and network connectivity."
-        log_info "Connection details: ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+        log_error "Network is reachable but database authentication failed"
+        log_error "Check:"
+        log_error "  - Database password is correct"
+        log_error "  - Database '${DB_NAME}' exists on ${DB_HOST}"
+        log_error "  - User '${DB_USER}' has access to database '${DB_NAME}'"
+        log_error "  - pg_hba.conf allows password authentication from this IP"
         exit 1
     fi
 
