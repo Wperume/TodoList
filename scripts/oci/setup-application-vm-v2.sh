@@ -591,7 +591,7 @@ run_migrations() {
     fi
 
     # Test actual database connection
-    if sudo -u ${APP_USER} bash -c "source ${APP_DIR}/.env && cd ${APP_DIR} && ./bin/migrate version" &> /dev/null; then
+    if sudo -u ${APP_USER} bash -c "export \$(cat ${APP_DIR}/.env | grep -v '^#' | xargs) && cd ${APP_DIR} && ./bin/migrate version" &> /dev/null; then
         log_success "Database connection successful"
     else
         log_error "Network is reachable but database authentication failed"
@@ -605,7 +605,7 @@ run_migrations() {
 
     # Run migrations
     log_info "Applying migrations..."
-    if sudo -u ${APP_USER} bash -c "source ${APP_DIR}/.env && cd ${APP_DIR} && ./bin/migrate up"; then
+    if sudo -u ${APP_USER} bash -c "export \$(cat ${APP_DIR}/.env | grep -v '^#' | xargs) && cd ${APP_DIR} && ./bin/migrate up"; then
         mark_complete "migrations_run"
         log_success "Migrations completed"
     else
