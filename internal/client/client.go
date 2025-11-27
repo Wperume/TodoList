@@ -16,17 +16,21 @@ import (
 
 // Client is a type-safe HTTP client for the TodoList API
 type Client struct {
-	baseURL    string
-	httpClient *http.Client
-	token      string // Bearer token for authentication
+	baseURL          string
+	httpClient       *http.Client
+	token            string // Bearer token for authentication
+	refreshToken     string // Refresh token for automatic renewal
+	onTokenRefreshed func(accessToken, refreshToken string) error // Callback when tokens are refreshed
 }
 
 // Config holds the client configuration
 type Config struct {
-	BaseURL           string
-	Token             string
+	BaseURL            string
+	Token              string
+	RefreshToken       string
 	InsecureSkipVerify bool // Skip TLS verification (for self-signed certs)
-	Timeout           time.Duration
+	Timeout            time.Duration
+	OnTokenRefreshed   func(accessToken, refreshToken string) error // Callback when tokens are refreshed
 }
 
 // NewClient creates a new API client
@@ -36,8 +40,10 @@ func NewClient(cfg Config) *Client {
 	}
 
 	return &Client{
-		baseURL: cfg.BaseURL,
-		token:   cfg.Token,
+		baseURL:          cfg.BaseURL,
+		token:            cfg.Token,
+		refreshToken:     cfg.RefreshToken,
+		onTokenRefreshed: cfg.OnTokenRefreshed,
 		httpClient: &http.Client{
 			Timeout: cfg.Timeout,
 			Transport: &http.Transport{
@@ -59,8 +65,13 @@ func (c *Client) GetToken() string {
 	return c.token
 }
 
-// doRequest performs an HTTP request with proper error handling
+// doRequest performs an HTTP request with proper error handling and automatic token refresh
 func (c *Client) doRequest(method, path string, body interface{}, auth bool) (*http.Response, error) {
+	return c.doRequestWithRetry(method, path, body, auth, true)
+}
+
+// doRequestWithRetry performs an HTTP request with optional retry on token expiration
+func (c *Client) doRequestWithRetry(method, path string, body interface{}, auth bool, retryOnTokenExpired bool) (*http.Response, error) {
 	var reqBody io.Reader
 	if body != nil {
 		jsonData, err := json.Marshal(body)
@@ -86,7 +97,54 @@ func (c *Client) doRequest(method, path string, body interface{}, auth bool) (*h
 		return nil, fmt.Errorf("request failed: %w", err)
 	}
 
+	// Check for TOKEN_EXPIRED error and attempt refresh if enabled
+	if retryOnTokenExpired && resp.StatusCode == http.StatusUnauthorized {
+		// Peek at the response to check for TOKEN_EXPIRED
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		var errResp models.ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &errResp); err == nil && errResp.Code == "TOKEN_EXPIRED" {
+			// Attempt to refresh the token
+			if c.refreshToken != "" {
+				if err := c.attemptTokenRefresh(); err == nil {
+					// Retry the request with the new token (without further retry)
+					return c.doRequestWithRetry(method, path, body, auth, false)
+				}
+			}
+		}
+
+		// Restore the response body for normal error handling
+		resp.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	}
+
 	return resp, nil
+}
+
+// attemptTokenRefresh attempts to refresh the access token using the refresh token
+func (c *Client) attemptTokenRefresh() error {
+	if c.refreshToken == "" {
+		return fmt.Errorf("no refresh token available")
+	}
+
+	// Call the refresh endpoint
+	authResp, err := c.RefreshToken(c.refreshToken)
+	if err != nil {
+		return fmt.Errorf("failed to refresh token: %w", err)
+	}
+
+	// Update internal tokens
+	c.token = authResp.AccessToken
+	c.refreshToken = authResp.RefreshToken
+
+	// Call the callback to persist the new tokens
+	if c.onTokenRefreshed != nil {
+		if err := c.onTokenRefreshed(authResp.AccessToken, authResp.RefreshToken); err != nil {
+			return fmt.Errorf("failed to persist refreshed tokens: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // parseResponse parses the HTTP response into the target type
