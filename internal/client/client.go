@@ -18,8 +18,8 @@ import (
 type Client struct {
 	baseURL          string
 	httpClient       *http.Client
-	token            string // Bearer token for authentication
-	refreshToken     string // Refresh token for automatic renewal
+	token            string                                       // Bearer token for authentication
+	refreshToken     string                                       // Refresh token for automatic renewal
 	onTokenRefreshed func(accessToken, refreshToken string) error // Callback when tokens are refreshed
 }
 
@@ -100,8 +100,11 @@ func (c *Client) doRequestWithRetry(method, path string, body interface{}, auth 
 	// Check for TOKEN_EXPIRED error and attempt refresh if enabled
 	if retryOnTokenExpired && resp.StatusCode == http.StatusUnauthorized {
 		// Peek at the response to check for TOKEN_EXPIRED
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		bodyBytes, err := io.ReadAll(resp.Body)
 		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read response body: %w", err)
+		}
 
 		var errResp models.ErrorResponse
 		if err := json.Unmarshal(bodyBytes, &errResp); err == nil && errResp.Code == "TOKEN_EXPIRED" {

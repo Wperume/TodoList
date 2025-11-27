@@ -9,11 +9,11 @@ import (
 
 // Config holds the CLI configuration
 type Config struct {
-	APIBaseURL    string `json:"apiBaseUrl"`
-	AccessToken   string `json:"accessToken,omitempty"`
-	RefreshToken  string `json:"refreshToken,omitempty"`
-	UserEmail     string `json:"userEmail,omitempty"`
-	InsecureSkipVerify bool `json:"insecureSkipVerify"` // For self-signed certs
+	APIBaseURL         string `json:"apiBaseUrl"`
+	AccessToken        string `json:"accessToken,omitempty"`
+	RefreshToken       string `json:"refreshToken,omitempty"`
+	UserEmail          string `json:"userEmail,omitempty"`
+	InsecureSkipVerify bool   `json:"insecureSkipVerify"` // For self-signed certs
 }
 
 const (
@@ -41,7 +41,7 @@ func LoadConfig() (*Config, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		// Return default config if file doesn't exist
 		return &Config{
-			APIBaseURL: "https://localhost:8443/api/v1",
+			APIBaseURL:         "https://localhost:8443/api/v1",
 			InsecureSkipVerify: false,
 		}, nil
 	}

@@ -65,10 +65,10 @@ func SecurityHeaders() gin.HandlerFunc {
 			// Allow Swagger UI to load its resources (CSS, JS, images)
 			c.Header("Content-Security-Policy",
 				"default-src 'self'; "+
-				"script-src 'self' 'unsafe-inline' 'unsafe-eval'; "+
-				"style-src 'self' 'unsafe-inline'; "+
-				"img-src 'self' data:; "+
-				"font-src 'self' data:")
+					"script-src 'self' 'unsafe-inline' 'unsafe-eval'; "+
+					"style-src 'self' 'unsafe-inline'; "+
+					"img-src 'self' data:; "+
+					"font-src 'self' data:")
 		} else {
 			// Strict CSP for API endpoints
 			c.Header("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
