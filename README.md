@@ -2218,11 +2218,15 @@ ssh oci-app
 ### Cost Optimization
 
 Oracle Cloud offers Always Free tier resources:
-- 2x AMD-based Compute instances (VM.Standard.E2.1.Micro)
+- 2x ARM-based Compute instances (VM.Standard.A1.Flex)
+  - Could not get VM.Standard.E2.1.Micro to run the setup scripts
 - 200GB block storage
+  - 110GB for Database instance
+  - 90GB for Application instance
 - 10GB Object Storage
 
-This is sufficient for running the TodoList API with database on separate VMs at no cost.
+This is sufficient for running the TodoList API with database on separate VMs at no cost.  Note that the Free-eligble shapes are often 
+out of capacity so you have to keep trying until some become available.
 
 ## Next Steps
 
