@@ -367,8 +367,41 @@ func (c *Client) DeleteList(listID uuid.UUID) error {
 
 // GetTodos retrieves all todos in a list
 func (c *Client) GetTodos(listID uuid.UUID) ([]models.Todo, error) {
+	return c.GetTodosWithFilter(listID, nil, nil, nil, "", "")
+}
+
+// GetTodosWithFilter retrieves todos in a list with optional filters
+func (c *Client) GetTodosWithFilter(listID uuid.UUID, priority *models.Priority, completed, flagged *bool, sortBy, sortOrder string) ([]models.Todo, error) {
 	path := fmt.Sprintf("/lists/%s/todos", listID)
-	resp, err := c.doRequest(http.MethodGet, path, nil, true)
+
+	// Build query parameters
+	query := ""
+	params := []string{}
+
+	if priority != nil {
+		params = append(params, fmt.Sprintf("priority=%s", *priority))
+	}
+	if completed != nil {
+		params = append(params, fmt.Sprintf("completed=%t", *completed))
+	}
+	if flagged != nil {
+		params = append(params, fmt.Sprintf("flagged=%t", *flagged))
+	}
+	if sortBy != "" {
+		params = append(params, fmt.Sprintf("sortBy=%s", sortBy))
+	}
+	if sortOrder != "" {
+		params = append(params, fmt.Sprintf("sortOrder=%s", sortOrder))
+	}
+
+	if len(params) > 0 {
+		query = "?" + params[0]
+		for i := 1; i < len(params); i++ {
+			query += "&" + params[i]
+		}
+	}
+
+	resp, err := c.doRequest(http.MethodGet, path+query, nil, true)
 	if err != nil {
 		return nil, err
 	}

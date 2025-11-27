@@ -102,6 +102,7 @@ func TestTodoBeforeCreate(t *testing.T) {
 		due_date DATETIME,
 		completed INTEGER DEFAULT 0,
 		completed_at DATETIME,
+		flagged INTEGER DEFAULT 0,
 		created_at DATETIME,
 		updated_at DATETIME,
 		deleted_at DATETIME,

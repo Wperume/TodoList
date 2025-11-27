@@ -35,7 +35,7 @@ Configuration is stored in `~/.todolist-cli.json` with the following structure:
 
 ```json
 {
-  "apiBaseUrl": "https://192.18.159.108:8443/api/v1",
+  "apiBaseUrl": "https://your-server.example.com:8443/api/v1",
   "accessToken": "eyJhbGc...",
   "refreshToken": "eyJhbGc...",
   "userEmail": "user@example.com",
@@ -50,7 +50,7 @@ Configuration is stored in `~/.todolist-cli.json` with the following structure:
 todocli config show
 
 # Set API URL
-todocli config set --api-url https://192.18.159.108:8443/api/v1
+todocli config set --api-url https://your-server.example.com:8443/api/v1
 
 # Enable insecure mode (skip TLS verification)
 todocli config set --insecure
@@ -180,8 +180,29 @@ todocli list delete <list-id> -y  # Short form
 ### List All Todos in a List
 
 ```bash
-# Table format
+# Basic list (all todos)
 todocli todo ls <list-id>
+
+# Filter by flagged status
+todocli todo ls <list-id> --flagged=true   # Show only flagged todos
+todocli todo ls <list-id> --flagged=false  # Show only non-flagged todos
+
+# Filter by completion status
+todocli todo ls <list-id> --completed=true   # Show only completed todos
+todocli todo ls <list-id> --completed=false  # Show only incomplete todos
+
+# Filter by priority
+todocli todo ls <list-id> --priority high
+todocli todo ls <list-id> -p medium  # Short form
+
+# Combine filters
+todocli todo ls <list-id> --flagged=true --completed=false  # Flagged and incomplete
+todocli todo ls <list-id> -p high --flagged=true           # High priority and flagged
+
+# Sort results
+todocli todo ls <list-id> --sort-by priority --sort-order desc
+todocli todo ls <list-id> --sort-by dueDate --sort-order asc
+todocli todo ls <list-id> --sort-by createdAt --sort-order desc
 
 # JSON format
 todocli todo ls <list-id> --json
@@ -193,6 +214,13 @@ ID                                    DESCRIPTION           PRIORITY  DUE DATE  
 a1b2c3d4-...                         Buy milk              high      2025-01-20  ⭐       [✓]
 e5f6g7h8-...                         Pick up laundry       medium    -                    [ ]
 ```
+
+**Filter Options:**
+- `--priority`: Filter by priority (`low`, `medium`, `high`)
+- `--completed`: Filter by completion status (`true` or `false`)
+- `--flagged`: Filter by flagged status (`true` or `false`)
+- `--sort-by`: Sort by field (`createdAt`, `priority`, `dueDate`)
+- `--sort-order`: Sort order (`asc`, `desc`)
 
 ### Get a Specific Todo
 
@@ -293,17 +321,17 @@ todocli todo update f47ac10b-58cc-4372-a567-0e02b2c3d479 <todo-id> --completed
 todocli list ls
 ```
 
-### Using with OCI Instance
+### Using with Remote Server
 
 ```bash
-# Configure for OCI instance
-todocli config set --api-url https://192.18.159.108:8443/api/v1
+# Configure for remote server
+todocli config set --api-url https://your-server.example.com:8443/api/v1
 todocli config set --insecure  # For self-signed cert
 
 # Login
 todocli auth login user@example.com
 
-# Now all commands work with OCI instance
+# Now all commands work with remote server
 todocli list ls
 ```
 
@@ -379,7 +407,7 @@ Check that:
 
 ```bash
 # Test connectivity
-curl -k https://192.18.159.108:8443/health
+curl -k https://your-server.example.com:8443/health
 
 # Check config
 todocli config show
@@ -478,7 +506,7 @@ done
 
 - **Issues**: https://github.com/yourorg/todolist-api/issues
 - **Documentation**: See [docs/](../docs/) directory
-- **API Documentation**: https://192.18.159.108:8443/swagger/index.html
+- **API Documentation**: https://your-server.example.com:8443/swagger/index.html
 
 ---
 

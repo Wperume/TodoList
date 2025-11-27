@@ -7,7 +7,7 @@
 set -e
 
 CONFIG_FILE="$HOME/.todolist-cli.conf"
-API_BASE="${API_BASE:-https://192.18.159.108:8443/api/v1}"
+API_BASE="${API_BASE:-https://localhost:8443/api/v1}"
 
 # Load config
 load_config() {
@@ -169,9 +169,9 @@ USAGE:
     $0 <command> [args]
 
 CONFIGURATION:
-    API_BASE    Set API base URL (default: https://192.18.159.108:8443/api/v1)
+    API_BASE    Set API base URL (default: https://localhost:8443/api/v1)
 
-    Example: API_BASE=https://localhost:8443/api/v1 $0 login user@test.com password
+    Example: API_BASE=https://your-server.example.com:8443/api/v1 $0 login user@test.com password
 
 COMMANDS:
     Authentication:
