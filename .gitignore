@@ -56,3 +56,14 @@ certs/
 *.crt
 *.pem
 *.csr
+
+# Backup files (created by deployment scripts)
+*.backup.*
+
+# Go cache and config directories (OCI deployment)
+.cache/
+.config/
+go/
+
+# Binary directories
+bin/

@@ -86,7 +86,7 @@ log_info "Step 3/8: Pulling latest code from Git..."
 cd $APP_DIR
 
 # Fetch latest changes
-sudo -u $APP_USER git fetch origin
+sudo -u $APP_USER git fetch origin --tags
 
 # Show current and target commits
 CURRENT_COMMIT=$(sudo -u $APP_USER git rev-parse HEAD)
@@ -105,6 +105,11 @@ if [ "$CURRENT_COMMIT" = "$TARGET_COMMIT" ]; then
         exit 0
     fi
 fi
+
+# Clean working directory to avoid -dirty version tags
+log_info "Cleaning Git working directory..."
+sudo -u $APP_USER git reset --hard HEAD
+sudo -u $APP_USER git clean -fd
 
 # Pull changes
 sudo -u $APP_USER git pull origin $BRANCH
