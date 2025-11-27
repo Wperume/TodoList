@@ -128,8 +128,8 @@ sudo mv todocli /usr/local/bin/
 ### Quick Start
 
 ```bash
-# Configure for self-signed certificates (OCI instance)
-todocli config set --api-url https://192.18.159.108:8443/api/v1 --insecure
+# Configure for self-signed certificates (replace with your server URL)
+todocli config set --api-url https://your-server:8443/api/v1 --insecure
 
 # Register and login
 todocli auth register user@example.com --first-name John
