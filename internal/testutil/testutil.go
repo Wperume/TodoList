@@ -61,6 +61,7 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 		due_date DATETIME,
 		completed INTEGER DEFAULT 0,
 		completed_at DATETIME,
+		flagged INTEGER DEFAULT 0,
 		created_at DATETIME,
 		updated_at DATETIME,
 		deleted_at DATETIME,
@@ -88,6 +89,7 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 	db.Exec(`CREATE UNIQUE INDEX idx_user_list_name ON todo_lists(user_id, name) WHERE deleted_at IS NULL`)
 	db.Exec(`CREATE INDEX idx_todos_list_id ON todos(list_id)`)
 	db.Exec(`CREATE INDEX idx_todos_completed ON todos(completed)`)
+	db.Exec(`CREATE INDEX idx_todos_flagged ON todos(flagged)`)
 	db.Exec(`CREATE INDEX idx_todos_deleted_at ON todos(deleted_at)`)
 	db.Exec(`CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id)`)
 	db.Exec(`CREATE INDEX idx_refresh_tokens_token ON refresh_tokens(token)`)

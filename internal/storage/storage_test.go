@@ -187,7 +187,7 @@ func TestDeleteList(t *testing.T) {
 		assert.ErrorIs(t, err, ErrListNotFound)
 
 		// Verify todos are deleted
-		todos, err := store.GetTodosByList(testMemoryUserID, created.ID, nil, nil, "createdAt", "asc")
+		todos, err := store.GetTodosByList(testMemoryUserID, created.ID, nil, nil, nil, "createdAt", "asc")
 		assert.ErrorIs(t, err, ErrListNotFound)
 		assert.Nil(t, todos)
 	})
@@ -254,14 +254,14 @@ func TestGetTodosByList(t *testing.T) {
 	}
 
 	t.Run("gets all todos", func(t *testing.T) {
-		result, err := store.GetTodosByList(testMemoryUserID, list.ID, nil, nil, "createdAt", "asc")
+		result, err := store.GetTodosByList(testMemoryUserID, list.ID, nil, nil, nil, "createdAt", "asc")
 		require.NoError(t, err)
 		assert.Len(t, result, 3)
 	})
 
 	t.Run("filters by priority", func(t *testing.T) {
 		priority := models.PriorityHigh
-		result, err := store.GetTodosByList(testMemoryUserID, list.ID, &priority, nil, "createdAt", "asc")
+		result, err := store.GetTodosByList(testMemoryUserID, list.ID, &priority, nil, nil, "createdAt", "asc")
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 		assert.Equal(t, models.PriorityHigh, result[0].Priority)
@@ -269,19 +269,19 @@ func TestGetTodosByList(t *testing.T) {
 
 	t.Run("filters by completion status", func(t *testing.T) {
 		completed := false
-		result, err := store.GetTodosByList(testMemoryUserID, list.ID, nil, &completed, "createdAt", "asc")
+		result, err := store.GetTodosByList(testMemoryUserID, list.ID, nil, &completed, nil, "createdAt", "asc")
 		require.NoError(t, err)
 		assert.Len(t, result, 3)
 	})
 
 	t.Run("sorts by priority", func(t *testing.T) {
-		result, err := store.GetTodosByList(testMemoryUserID, list.ID, nil, nil, "priority", "asc")
+		result, err := store.GetTodosByList(testMemoryUserID, list.ID, nil, nil, nil, "priority", "asc")
 		require.NoError(t, err)
 		assert.Equal(t, models.PriorityHigh, result[0].Priority)
 	})
 
 	t.Run("fails when list not found", func(t *testing.T) {
-		_, err := store.GetTodosByList(testMemoryUserID, uuid.New(), nil, nil, "createdAt", "asc")
+		_, err := store.GetTodosByList(testMemoryUserID, uuid.New(), nil, nil, nil, "createdAt", "asc")
 		assert.ErrorIs(t, err, ErrListNotFound)
 	})
 }

@@ -238,14 +238,14 @@ func TestPostgresGetTodosByList(t *testing.T) {
 	}
 
 	t.Run("gets all todos", func(t *testing.T) {
-		result, err := store.GetTodosByList(testUserID, list.ID, nil, nil, "createdAt", "asc")
+		result, err := store.GetTodosByList(testUserID, list.ID, nil, nil, nil, "createdAt", "asc")
 		require.NoError(t, err)
 		assert.Len(t, result, 3)
 	})
 
 	t.Run("filters by priority", func(t *testing.T) {
 		priority := models.PriorityHigh
-		result, err := store.GetTodosByList(testUserID, list.ID, &priority, nil, "createdAt", "asc")
+		result, err := store.GetTodosByList(testUserID, list.ID, &priority, nil, nil, "createdAt", "asc")
 		require.NoError(t, err)
 		assert.Len(t, result, 1)
 		assert.Equal(t, models.PriorityHigh, result[0].Priority)
@@ -253,13 +253,13 @@ func TestPostgresGetTodosByList(t *testing.T) {
 
 	t.Run("filters by completion status", func(t *testing.T) {
 		completed := false
-		result, err := store.GetTodosByList(testUserID, list.ID, nil, &completed, "createdAt", "asc")
+		result, err := store.GetTodosByList(testUserID, list.ID, nil, &completed, nil, "createdAt", "asc")
 		require.NoError(t, err)
 		assert.Len(t, result, 3)
 	})
 
 	t.Run("sorts by priority descending", func(t *testing.T) {
-		result, err := store.GetTodosByList(testUserID, list.ID, nil, nil, "priority", "desc")
+		result, err := store.GetTodosByList(testUserID, list.ID, nil, nil, nil, "priority", "desc")
 		require.NoError(t, err)
 		// Descending priority order: high -> medium -> low
 		assert.Equal(t, models.PriorityHigh, result[0].Priority)

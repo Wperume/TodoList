@@ -598,7 +598,7 @@ func TestDeleteList(t *testing.T) {
 		assert.Contains(t, []int{http.StatusOK, http.StatusNoContent}, w.Code)
 
 		// Verify todos are also deleted (indirectly through list not found)
-		_, err = store.GetTodosByList(testUserID, list.ID, nil, nil, "createdAt", "asc")
+		_, err = store.GetTodosByList(testUserID, list.ID, nil, nil, nil, "createdAt", "asc")
 		assert.ErrorIs(t, err, storage.ErrListNotFound)
 	})
 }
