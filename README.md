@@ -918,7 +918,7 @@ The service can be configured using environment variables:
 
 ### Logging Configuration
 - `LOG_FILE_ENABLED`: Enable/disable file logging (default: true)
-- `LOG_FILE_PATH`: Path to log file (default: ./logs/todolist-api.log)
+- `LOG_FILE_PATH`: Path to log file (default: ./logs/app.log)
 - `LOG_MAX_SIZE_MB`: Maximum log file size in MB before rotation (default: 100)
 - `LOG_MAX_BACKUPS`: Number of old log files to retain (default: 3)
 - `LOG_MAX_AGE_DAYS`: Maximum days to retain old log files (default: 28)
@@ -1157,10 +1157,10 @@ Logs are automatically rotated using lumberjack:
 Example log file structure:
 ```
 logs/
-├── todolist-api.log           # Current log file
-├── todolist-api-2025-11-09.log.gz
-├── todolist-api-2025-11-08.log.gz
-└── todolist-api-2025-11-07.log.gz
+├── app.log                    # Current log file
+├── app-2025-11-09.log.gz      # Rotated and compressed logs
+├── app-2025-11-08.log.gz
+└── app-2025-11-07.log.gz
 ```
 
 ### Log Levels
@@ -1188,7 +1188,7 @@ time="2025-11-10 15:04:05" level=warning msg="Rate limit exceeded" client_ip=192
 **Production (JSON format, info level):**
 ```bash
 LOG_FILE_ENABLED=true
-LOG_FILE_PATH=/var/log/todolist-api/app.log
+LOG_FILE_PATH=/opt/todolist-api/logs/app.log
 LOG_MAX_SIZE_MB=100
 LOG_MAX_BACKUPS=10
 LOG_MAX_AGE_DAYS=90
