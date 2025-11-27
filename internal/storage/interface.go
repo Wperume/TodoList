@@ -17,7 +17,7 @@ type Store interface {
 
 	// Todo operations
 	CreateTodo(userID, listID uuid.UUID, req models.CreateTodoRequest) (*models.Todo, error)
-	GetTodosByList(userID, listID uuid.UUID, priority *models.Priority, completed *bool, sortBy, sortOrder string) ([]models.Todo, error)
+	GetTodosByList(userID, listID uuid.UUID, priority *models.Priority, completed, flagged *bool, sortBy, sortOrder string) ([]models.Todo, error)
 	GetTodoByID(userID, listID, todoID uuid.UUID) (*models.Todo, error)
 	UpdateTodo(userID, listID, todoID uuid.UUID, req models.UpdateTodoRequest) (*models.Todo, error)
 	DeleteTodo(userID, listID, todoID uuid.UUID) error

@@ -739,6 +739,12 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
+                        "type": "boolean",
+                        "description": "Filter by flagged status",
+                        "name": "flagged",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "Sort by field (due_date, priority, created_at)",
                         "name": "sort_by",
@@ -1137,6 +1143,9 @@ const docTemplate = `{
                 "dueDate": {
                     "type": "string"
                 },
+                "flagged": {
+                    "type": "boolean"
+                },
                 "priority": {
                     "enum": [
                         "low",
@@ -1287,6 +1296,9 @@ const docTemplate = `{
                 "dueDate": {
                     "type": "string"
                 },
+                "flagged": {
+                    "type": "boolean"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -1382,6 +1394,9 @@ const docTemplate = `{
                 },
                 "dueDate": {
                     "type": "string"
+                },
+                "flagged": {
+                    "type": "boolean"
                 },
                 "priority": {
                     "enum": [

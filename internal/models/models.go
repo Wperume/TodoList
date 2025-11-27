@@ -116,6 +116,7 @@ type Todo struct {
 	DueDate     *time.Time     `gorm:"type:timestamp" json:"dueDate,omitempty"`
 	Completed   bool           `gorm:"default:false;index" json:"completed"`
 	CompletedAt *time.Time     `gorm:"type:timestamp" json:"completedAt,omitempty"`
+	Flagged     bool           `gorm:"default:false;index" json:"flagged"`
 	CreatedAt   time.Time      `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt   time.Time      `gorm:"autoUpdateTime" json:"updatedAt"`
 	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
@@ -134,6 +135,7 @@ type CreateTodoRequest struct {
 	Description string     `json:"description" binding:"required,min=1,max=500"`
 	Priority    Priority   `json:"priority" binding:"required,oneof=low medium high"`
 	DueDate     *time.Time `json:"dueDate,omitempty"`
+	Flagged     bool       `json:"flagged,omitempty"`
 }
 
 // UpdateTodoRequest represents the request to update a todo
@@ -142,6 +144,7 @@ type UpdateTodoRequest struct {
 	Priority    *Priority  `json:"priority,omitempty" binding:"omitempty,oneof=low medium high"`
 	DueDate     *time.Time `json:"dueDate,omitempty"`
 	Completed   *bool      `json:"completed,omitempty"`
+	Flagged     *bool      `json:"flagged,omitempty"`
 }
 
 // Pagination represents pagination information

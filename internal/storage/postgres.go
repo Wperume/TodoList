@@ -171,6 +171,7 @@ func (s *PostgresStorage) CreateTodo(userID, listID uuid.UUID, req models.Create
 		Priority:    req.Priority,
 		DueDate:     req.DueDate,
 		Completed:   false,
+		Flagged:     req.Flagged,
 	}
 
 	if err := s.db.Create(todo).Error; err != nil {
@@ -184,7 +185,7 @@ func (s *PostgresStorage) CreateTodo(userID, listID uuid.UUID, req models.Create
 func (s *PostgresStorage) GetTodosByList(
 	userID, listID uuid.UUID,
 	priority *models.Priority,
-	completed *bool,
+	completed, flagged *bool,
 	sortBy, sortOrder string,
 ) ([]models.Todo, error) {
 	// Check if list exists and belongs to user
@@ -205,6 +206,9 @@ func (s *PostgresStorage) GetTodosByList(
 	}
 	if completed != nil {
 		query = query.Where("completed = ?", *completed)
+	}
+	if flagged != nil {
+		query = query.Where("flagged = ?", *flagged)
 	}
 
 	// Apply sorting
@@ -281,6 +285,9 @@ func (s *PostgresStorage) UpdateTodo(userID, listID, todoID uuid.UUID, req model
 		} else if !*req.Completed && wasCompleted {
 			todo.CompletedAt = nil
 		}
+	}
+	if req.Flagged != nil {
+		todo.Flagged = *req.Flagged
 	}
 
 	if err := s.db.Save(&todo).Error; err != nil {

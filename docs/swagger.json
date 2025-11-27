@@ -733,6 +733,12 @@
                         "in": "query"
                     },
                     {
+                        "type": "boolean",
+                        "description": "Filter by flagged status",
+                        "name": "flagged",
+                        "in": "query"
+                    },
+                    {
                         "type": "string",
                         "description": "Sort by field (due_date, priority, created_at)",
                         "name": "sort_by",
@@ -1131,6 +1137,9 @@
                 "dueDate": {
                     "type": "string"
                 },
+                "flagged": {
+                    "type": "boolean"
+                },
                 "priority": {
                     "enum": [
                         "low",
@@ -1281,6 +1290,9 @@
                 "dueDate": {
                     "type": "string"
                 },
+                "flagged": {
+                    "type": "boolean"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -1376,6 +1388,9 @@
                 },
                 "dueDate": {
                     "type": "string"
+                },
+                "flagged": {
+                    "type": "boolean"
                 },
                 "priority": {
                     "enum": [

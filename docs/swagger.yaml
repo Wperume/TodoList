@@ -72,6 +72,8 @@ definitions:
         type: string
       dueDate:
         type: string
+      flagged:
+        type: boolean
       priority:
         allOf:
         - $ref: '#/definitions/models.Priority'
@@ -174,6 +176,8 @@ definitions:
         type: string
       dueDate:
         type: string
+      flagged:
+        type: boolean
       id:
         type: string
       listId:
@@ -242,6 +246,8 @@ definitions:
         type: string
       dueDate:
         type: string
+      flagged:
+        type: boolean
       priority:
         allOf:
         - $ref: '#/definitions/models.Priority'
@@ -737,6 +743,10 @@ paths:
       - description: Filter by completion status
         in: query
         name: completed
+        type: boolean
+      - description: Filter by flagged status
+        in: query
+        name: flagged
         type: boolean
       - description: Sort by field (due_date, priority, created_at)
         in: query

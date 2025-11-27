@@ -205,6 +205,7 @@ func (s *Storage) CreateTodo(userID, listID uuid.UUID, req models.CreateTodoRequ
 		DueDate:     req.DueDate,
 		Completed:   false,
 		CompletedAt: nil,
+		Flagged:     req.Flagged,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -217,7 +218,7 @@ func (s *Storage) CreateTodo(userID, listID uuid.UUID, req models.CreateTodoRequ
 func (s *Storage) GetTodosByList(
 	userID, listID uuid.UUID,
 	priority *models.Priority,
-	completed *bool,
+	completed, flagged *bool,
 	sortBy, sortOrder string,
 ) ([]models.Todo, error) {
 	s.mu.RLock()
@@ -240,6 +241,9 @@ func (s *Storage) GetTodosByList(
 			continue
 		}
 		if completed != nil && todo.Completed != *completed {
+			continue
+		}
+		if flagged != nil && todo.Flagged != *flagged {
 			continue
 		}
 
@@ -308,6 +312,9 @@ func (s *Storage) UpdateTodo(userID, listID, todoID uuid.UUID, req models.Update
 		} else if !*req.Completed && wasCompleted {
 			todo.CompletedAt = nil
 		}
+	}
+	if req.Flagged != nil {
+		todo.Flagged = *req.Flagged
 	}
 
 	todo.UpdatedAt = time.Now()

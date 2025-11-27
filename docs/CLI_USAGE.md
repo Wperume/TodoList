@@ -189,9 +189,9 @@ todocli todo ls <list-id> --json
 
 Output:
 ```
-ID                                    DESCRIPTION           PRIORITY  DUE DATE    COMPLETED
-a1b2c3d4-...                         Buy milk              high      2025-01-20  [✓]
-e5f6g7h8-...                         Pick up laundry       medium    -           [ ]
+ID                                    DESCRIPTION           PRIORITY  DUE DATE    FLAGGED  COMPLETED
+a1b2c3d4-...                         Buy milk              high      2025-01-20  ⭐       [✓]
+e5f6g7h8-...                         Pick up laundry       medium    -                    [ ]
 ```
 
 ### Get a Specific Todo
@@ -214,8 +214,12 @@ todocli todo create <list-id> "Buy milk" -p high  # Short form
 todocli todo create <list-id> "Buy milk" --due-date 2025-01-20
 todocli todo create <list-id> "Buy milk" -d 2025-01-20  # Short form
 
-# With both
-todocli todo create <list-id> "Buy milk" -p high -d 2025-01-20
+# With flagged status
+todocli todo create <list-id> "Buy milk" --flagged
+todocli todo create <list-id> "Buy milk" -f  # Short form
+
+# With all options
+todocli todo create <list-id> "Buy milk" -p high -d 2025-01-20 -f
 ```
 
 Priority values: `low`, `medium`, `high`
@@ -238,8 +242,14 @@ todocli todo update <list-id> <todo-id> --completed
 # Mark as incomplete
 todocli todo update <list-id> <todo-id> --incomplete
 
+# Mark as flagged
+todocli todo update <list-id> <todo-id> --flagged
+
+# Mark as unflagged
+todocli todo update <list-id> <todo-id> --unflagged
+
 # Update multiple fields
-todocli todo update <list-id> <todo-id> -p high -d 2025-01-25 --completed
+todocli todo update <list-id> <todo-id> -p high -d 2025-01-25 --completed --flagged
 ```
 
 ### Delete a Todo

@@ -29,6 +29,7 @@ func NewTodoHandler(store storage.Store) *TodoHandler {
 // @Param listId path string true "List ID (UUID)"
 // @Param priority query string false "Filter by priority (low, medium, high)"
 // @Param completed query boolean false "Filter by completion status"
+// @Param flagged query boolean false "Filter by flagged status"
 // @Param sort_by query string false "Sort by field (due_date, priority, created_at)"
 // @Param sort_order query string false "Sort order (asc, desc)"
 // @Success 200 {array} models.Todo
@@ -61,12 +62,17 @@ func (h *TodoHandler) GetTodosByList(c *gin.Context) {
 		return
 	}
 
+	flagged, ok := parseFlaggedFilter(c)
+	if !ok {
+		return
+	}
+
 	sortBy, sortOrder, ok := parseSortParams(c)
 	if !ok {
 		return
 	}
 
-	todos, err := h.storage.GetTodosByList(userID, listID, priority, completed, sortBy, sortOrder)
+	todos, err := h.storage.GetTodosByList(userID, listID, priority, completed, flagged, sortBy, sortOrder)
 	if err != nil {
 		if err == storage.ErrListNotFound {
 			c.JSON(http.StatusNotFound, models.ErrorResponse{
@@ -372,6 +378,28 @@ func parseCompletedFilter(c *gin.Context) (*bool, bool) {
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Code:    "INVALID_COMPLETED",
 			Message: "Completed must be true or false",
+		})
+		return nil, false
+	}
+}
+
+func parseFlaggedFilter(c *gin.Context) (*bool, bool) {
+	flaggedStr := c.Query("flagged")
+	if flaggedStr == "" {
+		return nil, true
+	}
+
+	switch flaggedStr {
+	case "true":
+		t := true
+		return &t, true
+	case "false":
+		f := false
+		return &f, true
+	default:
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Code:    "INVALID_FLAGGED",
+			Message: "Flagged must be true or false",
 		})
 		return nil, false
 	}
