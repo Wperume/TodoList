@@ -115,7 +115,7 @@ func TestDetailedHealth_Healthy(t *testing.T) {
 	assert.Equal(t, "healthy", response.Status)
 	assert.NotEmpty(t, response.Timestamp)
 	assert.NotEmpty(t, response.Uptime)
-	assert.Equal(t, "1.0.0", response.Version)
+	assert.NotEmpty(t, response.Version) // Version can be "dev" in tests or actual version in builds
 
 	// Check database health
 	assert.Contains(t, response.Checks, "database")
