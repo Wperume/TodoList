@@ -1,9 +1,20 @@
-.PHONY: build run run-memory docker-build docker-run docker-up docker-down docker-logs db-shell test test-unit test-coverage test-verbose clean help migrate-up migrate-down migrate-version migrate-steps migrate-force migrate-create build-migrate
+.PHONY: build run run-memory docker-build docker-run docker-up docker-down docker-logs db-shell test test-unit test-coverage test-verbose clean help migrate-up migrate-down migrate-version migrate-steps migrate-force migrate-create build-migrate version
+
+# Version information
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+BUILD_DATE ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
+LDFLAGS = -X 'todolist-api/internal/version.Version=$(VERSION)' \
+          -X 'todolist-api/internal/version.Commit=$(COMMIT)' \
+          -X 'todolist-api/internal/version.BuildDate=$(BUILD_DATE)'
 
 # Build the application
 build:
 	@echo "Building application..."
-	go build -o todolist-api ./cmd/server
+	@echo "Version: $(VERSION)"
+	@echo "Commit: $(COMMIT)"
+	@echo "Build Date: $(BUILD_DATE)"
+	go build -ldflags "$(LDFLAGS)" -o todolist-api ./cmd/server
 
 # Run the application locally with PostgreSQL
 run: build
@@ -132,6 +143,12 @@ migrate-create:
 	echo "   $$UP_FILE"; \
 	echo "   $$DOWN_FILE"
 
+# Show version information
+version:
+	@echo "Version: $(VERSION)"
+	@echo "Commit: $(COMMIT)"
+	@echo "Build Date: $(BUILD_DATE)"
+
 # Show help
 help:
 	@echo "Available targets:"
@@ -168,4 +185,5 @@ help:
 	@echo "  deps          - Download dependencies"
 	@echo "  fmt           - Format code"
 	@echo "  lint          - Run linter"
+	@echo "  version       - Show version information"
 	@echo "  help          - Show this help message"

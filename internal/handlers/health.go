@@ -7,6 +7,8 @@ import (
 	"runtime"
 	"time"
 
+	"todolist-api/internal/version"
+
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -91,7 +93,7 @@ func (h *HealthHandler) DetailedHealth(c *gin.Context) {
 		Status:    overallStatus,
 		Timestamp: time.Now().UTC().Format(time.RFC3339),
 		Uptime:    formatDuration(uptime),
-		Version:   "1.0.0", // TODO: Get from build info
+		Version:   version.Short(),
 		Checks:    checks,
 	}
 

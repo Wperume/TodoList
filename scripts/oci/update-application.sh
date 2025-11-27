@@ -179,7 +179,19 @@ fi
 
 # Step 6: Rebuild application
 log_info "Step 6/8: Building application..."
-sudo -u $APP_USER bash -c "cd $APP_DIR && export PATH=/usr/local/go/bin:\$PATH && $GO_PATH build -o $APP_NAME cmd/server/main.go"
+
+# Get version information
+VERSION=$(sudo -u $APP_USER bash -c "cd $APP_DIR && git describe --tags --always --dirty 2>/dev/null || echo 'deployed'")
+COMMIT=$(sudo -u $APP_USER bash -c "cd $APP_DIR && git rev-parse --short HEAD 2>/dev/null || echo 'unknown'")
+BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+log_info "Version: $VERSION"
+log_info "Commit: $COMMIT"
+log_info "Build Date: $BUILD_DATE"
+
+# Build with version information
+LDFLAGS="-X 'todolist-api/internal/version.Version=$VERSION' -X 'todolist-api/internal/version.Commit=$COMMIT' -X 'todolist-api/internal/version.BuildDate=$BUILD_DATE'"
+sudo -u $APP_USER bash -c "cd $APP_DIR && export PATH=/usr/local/go/bin:\$PATH && $GO_PATH build -ldflags \"$LDFLAGS\" -o $APP_NAME cmd/server/main.go"
 
 if [ ! -f "$APP_DIR/$APP_NAME" ]; then
     log_error "Build failed! Binary not created"

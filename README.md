@@ -997,7 +997,31 @@ source ~/.zshrc  # or source ~/.bashrc
 ### Building
 
 ```bash
+# Build with version information (recommended)
+make build
+
+# Or build directly with go
 go build -o todolist-api ./cmd/server
+```
+
+The build process automatically injects version information from Git:
+- **Version**: Git tag or commit SHA (e.g., "v1.0.0" or "abc1234")
+- **Commit**: Short Git commit SHA
+- **Build Date**: ISO 8601 timestamp of when the build occurred
+- **Go Version**: Go version used to compile the binary
+
+This version information is exposed through the `/health/detailed` endpoint.
+
+### Viewing Version Information
+
+```bash
+# Show version information before building
+make version
+
+# Check version in running application
+curl http://localhost:8080/health/detailed | jq '.version'
+
+# Expected output: "v1.0.0 (abc1234)" or "abc1234"
 ```
 
 ### Code Quality Checks
@@ -1241,6 +1265,7 @@ GET /health/detailed
 ```
 
 Comprehensive health check that includes:
+- Application version (from Git commit/tag)
 - Database connectivity and connection pool statistics
 - Database migration status
 - System metrics (goroutines, memory usage, garbage collection)
@@ -1252,7 +1277,7 @@ Comprehensive health check that includes:
   "status": "healthy",
   "timestamp": "2025-11-25T22:00:00Z",
   "uptime": "2h 15m 30s",
-  "version": "1.0.0",
+  "version": "b00ec94",
   "checks": {
     "database": {
       "status": "healthy",
