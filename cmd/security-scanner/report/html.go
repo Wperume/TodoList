@@ -1,0 +1,127 @@
+package report
+
+import (
+	"fmt"
+	"os"
+	"text/template"
+	"todolist-api/cmd/security-scanner/scanner"
+)
+
+const htmlTemplate = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Scan Report - {{.Target}}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 3px solid #4CAF50; padding-bottom: 10px; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }
+        .summary-card { background: #f9f9f9; padding: 20px; border-radius: 6px; border-left: 4px solid #4CAF50; }
+        .summary-card h3 { margin-top: 0; color: #666; }
+        .summary-card .value { font-size: 2em; font-weight: bold; color: #333; }
+        .security-score { font-size: 3em; font-weight: bold; {{if ge .SecurityScore 80}}color: #4CAF50;{{else if ge .SecurityScore 60}}color: #FF9800;{{else}}color: #f44336;{{end}} }
+        .category { margin: 30px 0; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
+        .category-header { background: #4CAF50; color: white; padding: 15px; font-weight: bold; }
+        .category-header.warning { background: #FF9800; }
+        .category-header.fail { background: #f44336; }
+        .test { padding: 15px; border-bottom: 1px solid #eee; }
+        .test:last-child { border-bottom: none; }
+        .test-header { display: flex; justify-content: space-between; align-items: center; }
+        .test-name { font-weight: bold; color: #333; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 0.8em; font-weight: bold; }
+        .badge.pass { background: #4CAF50; color: white; }
+        .badge.fail { background: #f44336; color: white; }
+        .badge.warning { background: #FF9800; color: white; }
+        .badge.skipped { background: #9E9E9E; color: white; }
+        .severity { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75em; margin-left: 8px; }
+        .severity.critical { background: #d32f2f; color: white; }
+        .severity.high { background: #f44336; color: white; }
+        .severity.medium { background: #FF9800; color: white; }
+        .severity.low { background: #FFC107; color: white; }
+        .severity.info { background: #2196F3; color: white; }
+        .test-details { margin-top: 10px; color: #666; font-size: 0.9em; }
+        .footer { margin-top: 40px; text-align: center; color: #999; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Security Scan Report</h1>
+
+        <div class="summary">
+            <div class="summary-card">
+                <h3>Target</h3>
+                <div class="value" style="font-size: 1.2em;">{{.Target}}</div>
+            </div>
+            <div class="summary-card">
+                <h3>Security Score</h3>
+                <div class="security-score">{{.SecurityScore}}/100</div>
+            </div>
+            <div class="summary-card">
+                <h3>Tests Run</h3>
+                <div class="value">{{.TotalTests}}</div>
+            </div>
+            <div class="summary-card">
+                <h3>Passed</h3>
+                <div class="value" style="color: #4CAF50;">{{.PassedTests}}</div>
+            </div>
+            <div class="summary-card">
+                <h3>Failed</h3>
+                <div class="value" style="color: #f44336;">{{.FailedTests}}</div>
+            </div>
+            <div class="summary-card">
+                <h3>Warnings</h3>
+                <div class="value" style="color: #FF9800;">{{.WarningTests}}</div>
+            </div>
+        </div>
+
+        <p><strong>Scan Date:</strong> {{.ScanDate.Format "2006-01-02 15:04:05"}}</p>
+        <p><strong>Duration:</strong> {{.Duration}}</p>
+
+        {{range $name, $category := .Categories}}
+        <div class="category">
+            <div class="category-header {{if lt $category.Score 60}}fail{{else if lt $category.Score 80}}warning{{end}}">
+                {{$category.Name}} - Score: {{$category.Score}}/100
+            </div>
+            {{range $category.Tests}}
+            <div class="test">
+                <div class="test-header">
+                    <div>
+                        <span class="test-name">{{.Name}}</span>
+                        <span class="badge {{.Status}}">{{.Status}}</span>
+                        <span class="severity {{.Severity}}">{{.Severity}}</span>
+                    </div>
+                </div>
+                <div class="test-details">{{.Details}}</div>
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+
+        <div class="footer">
+            <p>Generated by TodoList API Security Scanner</p>
+        </div>
+    </div>
+</body>
+</html>`
+
+// GenerateHTML generates an HTML report from scan results
+func GenerateHTML(result *scanner.ScanResult, outputPath string) error {
+	tmpl, err := template.New("report").Parse(htmlTemplate)
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	file, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("failed to create output file: %w", err)
+	}
+	defer file.Close()
+
+	if err := tmpl.Execute(file, result); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return nil
+}

@@ -18,6 +18,7 @@ require (
 	github.com/ulule/limiter/v3 v3.11.2
 	golang.org/x/crypto v0.44.0
 	golang.org/x/term v0.37.0
+	golang.org/x/time v0.12.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/driver/sqlite v1.6.0

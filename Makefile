@@ -1,4 +1,4 @@
-.PHONY: build run run-memory docker-build docker-run docker-up docker-down docker-logs db-shell test test-unit test-coverage test-verbose clean help migrate-up migrate-down migrate-version migrate-steps migrate-force migrate-create build-migrate version
+.PHONY: build run run-memory docker-build docker-run docker-up docker-down docker-logs db-shell test test-unit test-coverage test-verbose test-security test-security-verbose scan-security build-scanner clean help migrate-up migrate-down migrate-version migrate-steps migrate-force migrate-create build-migrate version
 
 # Version information
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -80,10 +80,43 @@ test-verbose:
 	@echo "Running tests in verbose mode..."
 	go test ./... -v -short -count=1
 
+# Run security integration tests
+test-security:
+	@echo "Running security tests..."
+	go test ./internal/security/... -v -count=1
+
+# Run security tests in verbose mode
+test-security-verbose:
+	@echo "Running security tests (verbose)..."
+	go test ./internal/security/... -v -count=1 -test.v
+
+# Build security scanner
+build-scanner:
+	@echo "Building security scanner..."
+	@go build -o bin/security-scanner ./cmd/security-scanner
+	@echo "✅ Security scanner built: bin/security-scanner"
+
+# Run security scanner against local instance
+scan-security: build-scanner
+	@echo "Running security scan..."
+	@if [ -z "$(TARGET)" ]; then \
+		echo "Using default target: https://localhost:8443"; \
+		./bin/security-scanner --target https://localhost:8443 --skip-tls --verbose --output security-report.html; \
+	else \
+		./bin/security-scanner --target $(TARGET) --verbose --output security-report.html; \
+	fi
+
+# Run all tests including security
+test-all: test-unit test-security
+	@echo "✅ All tests completed"
+
 # Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts..."
 	@rm -f todolist-api
+	@rm -f bin/migrate
+	@rm -f bin/security-scanner
+	@rm -f security-report.html
 	@go clean
 
 # Download dependencies
