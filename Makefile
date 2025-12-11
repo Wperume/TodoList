@@ -1,4 +1,4 @@
-.PHONY: build run run-memory docker-build docker-run docker-up docker-down docker-logs db-shell test test-unit test-coverage test-verbose test-security test-security-verbose scan-security build-scanner clean help migrate-up migrate-down migrate-version migrate-steps migrate-force migrate-create build-migrate version
+.PHONY: build run run-memory docker-build docker-run docker-up docker-down docker-logs db-shell test test-unit test-coverage test-verbose test-security test-security-verbose scan-security scan-security-full build-scanner clean help migrate-up migrate-down migrate-version migrate-steps migrate-force migrate-create build-migrate version
 
 # Version information
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
@@ -96,14 +96,24 @@ build-scanner:
 	@go build -o bin/security-scanner ./cmd/security-scanner
 	@echo "✅ Security scanner built: bin/security-scanner"
 
-# Run security scanner against local instance
+# Run security scanner against local instance (safe mode)
 scan-security: build-scanner
-	@echo "Running security scan..."
+	@echo "Running security scan (safe mode)..."
 	@if [ -z "$(TARGET)" ]; then \
 		echo "Using default target: https://localhost:8443"; \
 		./bin/security-scanner --target https://localhost:8443 --skip-tls --verbose --output security-report.html; \
 	else \
 		./bin/security-scanner --target $(TARGET) --verbose --output security-report.html; \
+	fi
+
+# Run security scanner with full testing (disable safe mode)
+scan-security-full: build-scanner
+	@echo "Running security scan (FULL TESTING - not safe for production)..."
+	@if [ -z "$(TARGET)" ]; then \
+		echo "Using default target: https://localhost:8443"; \
+		./bin/security-scanner --target https://localhost:8443 --skip-tls --safe-mode=false --verbose --output security-report.html; \
+	else \
+		./bin/security-scanner --target $(TARGET) --safe-mode=false --verbose --output security-report.html; \
 	fi
 
 # Run all tests including security
@@ -218,7 +228,8 @@ help:
 	@echo ""
 	@echo "Security:"
 	@echo "  build-scanner           - Build security scanner tool"
-	@echo "  scan-security           - Scan local/remote instance (use TARGET=url)"
+	@echo "  scan-security           - Scan instance in safe mode (use TARGET=url)"
+	@echo "  scan-security-full      - Full security scan (unsafe for production)"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  clean         - Clean build artifacts"

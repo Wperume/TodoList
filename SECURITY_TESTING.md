@@ -113,6 +113,7 @@ make scan-security TARGET=https://localhost:8443
 ```
 --target string          Target URL (required)
 --safe-mode             Enable safe mode (read-only testing) (default: true)
+                        Set to false for full testing: --safe-mode=false
 --max-rps int           Maximum requests per second (default: 5)
 --timeout int           Request timeout in seconds (default: 10)
 --skip-tls              Skip TLS certificate verification (for testing only)
@@ -121,6 +122,35 @@ make scan-security TARGET=https://localhost:8443
 --verbose               Verbose output
 --test-user string      Test user email (optional)
 --test-password string  Test user password (optional)
+```
+
+### Safe Mode vs Full Testing
+
+**Safe Mode (default: --safe-mode or --safe-mode=true)**
+- ✅ Production-safe, read-only checks
+- ✅ TLS/SSL validation
+- ✅ Security headers checks
+- ✅ CORS configuration
+- ✅ Health endpoint checks
+- ❌ Skips rate limiting tests (avoids many rapid requests)
+- ❌ Skips aggressive authentication tests
+
+**Full Testing Mode (--safe-mode=false)**
+- ✅ All safe mode checks
+- ✅ Rate limiting tests (sends multiple rapid requests)
+- ✅ Comprehensive authentication tests
+- ⚠️ More aggressive - use on dev/staging only
+
+**Usage Examples:**
+```bash
+# Production - always use safe mode
+./bin/security-scanner --target https://api.production.com --safe-mode
+
+# Staging - can use full testing
+./bin/security-scanner --target https://staging.example.com --safe-mode=false
+
+# Local dev - full testing with verbose output
+./bin/security-scanner --target https://localhost:8443 --skip-tls --safe-mode=false --verbose
 ```
 
 ### Scanner Test Categories
