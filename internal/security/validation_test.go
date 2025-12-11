@@ -21,11 +21,11 @@ func TestXSSInInputs(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user, token := testutil.CreateTestUserWithToken(t, router)
-	list := testutil.CreateTestList(t, router, token, user.ID)
+	user, token := CreateTestUserWithToken(t, router)
+	list := testutil.CreateTestListViaAPI(t, router, token, user.ID)
 
 	xssPayloads := []string{
 		"<script>alert('XSS')</script>",
@@ -76,11 +76,11 @@ func TestOversizedInputs(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user, token := testutil.CreateTestUserWithToken(t, router)
-	list := testutil.CreateTestList(t, router, token, user.ID)
+	user, token := CreateTestUserWithToken(t, router)
+	list := testutil.CreateTestListViaAPI(t, router, token, user.ID)
 
 	// Create very large strings
 	oversizedInputs := []struct {
@@ -131,10 +131,10 @@ func TestInvalidUUIDs(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	_, token := testutil.CreateTestUserWithToken(t, router)
+	_, token := CreateTestUserWithToken(t, router)
 
 	invalidUUIDs := []string{
 		"not-a-uuid",
@@ -173,10 +173,10 @@ func TestInvalidJSON(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	_, token := testutil.CreateTestUserWithToken(t, router)
+	_, token := CreateTestUserWithToken(t, router)
 
 	malformedJSONs := []string{
 		"{invalid json}",
@@ -217,11 +217,11 @@ func TestSpecialCharacters(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user, token := testutil.CreateTestUserWithToken(t, router)
-	list := testutil.CreateTestList(t, router, token, user.ID)
+	user, token := CreateTestUserWithToken(t, router)
+	list := testutil.CreateTestListViaAPI(t, router, token, user.ID)
 
 	specialCharInputs := []string{
 		"Unicode: 你好世界 🌍",
@@ -268,10 +268,10 @@ func TestContentTypeValidation(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	_, token := testutil.CreateTestUserWithToken(t, router)
+	_, token := CreateTestUserWithToken(t, router)
 
 	validJSON := `{"name":"Test List","description":"Test"}`
 
@@ -317,7 +317,7 @@ func TestEmailValidation(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
 	invalidEmails := []string{

@@ -20,7 +20,7 @@ func TestSQLInjectionInLogin(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
 	// Common SQL injection payloads
@@ -82,12 +82,12 @@ func TestSQLInjectionInTodoDescription(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
 	// Register and login to get a token
-	user, token := testutil.CreateTestUserWithToken(t, router)
-	list := testutil.CreateTestList(t, router, token, user.ID)
+	user, token := CreateTestUserWithToken(t, router)
+	list := testutil.CreateTestListViaAPI(t, router, token, user.ID)
 
 	sqlInjectionVectors := []string{
 		"'; DROP TABLE todos--",
@@ -141,11 +141,11 @@ func TestCommandInjectionInDescription(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user, token := testutil.CreateTestUserWithToken(t, router)
-	list := testutil.CreateTestList(t, router, token, user.ID)
+	user, token := CreateTestUserWithToken(t, router)
+	list := testutil.CreateTestListViaAPI(t, router, token, user.ID)
 
 	commandInjectionVectors := []string{
 		"; ls -la",
@@ -193,10 +193,10 @@ func TestNoSQLInjectionInUUID(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	_, token := testutil.CreateTestUserWithToken(t, router)
+	_, token := CreateTestUserWithToken(t, router)
 
 	// Malicious UUID-like strings
 	maliciousUUIDs := []string{

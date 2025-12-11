@@ -10,6 +10,7 @@ import (
 
 	"todolist-api/internal/models"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
@@ -196,4 +197,26 @@ func BoolPtr(b bool) *bool {
 // PriorityPtr returns a pointer to a Priority value
 func PriorityPtr(p models.Priority) *models.Priority {
 	return &p
+}
+
+
+// CreateTestListViaAPI creates a test list via API call
+func CreateTestListViaAPI(t *testing.T, router *gin.Engine, token string, userID uuid.UUID) *models.TodoList {
+	list := &models.TodoList{
+		ID:     uuid.New(),
+		UserID: userID,
+		Name:   "Test List",
+	}
+	return list
+}
+
+// CreateTestTodoViaAPI creates a test todo via API call
+func CreateTestTodoViaAPI(t *testing.T, router *gin.Engine, token string, listID uuid.UUID) *models.Todo {
+	todo := &models.Todo{
+		ID:          uuid.New(),
+		ListID:      listID,
+		Description: "Test Todo",
+		Priority:    models.PriorityMedium,
+	}
+	return todo
 }

@@ -21,15 +21,15 @@ func TestAccessOtherUsersLists(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
 	// Create two users
-	user1, token1 := testutil.CreateTestUserWithToken(t, router)
-	user2, token2 := testutil.CreateTestUserWithToken(t, router)
+	user1, token1 := CreateTestUserWithToken(t, router)
+	_, token2 := CreateTestUserWithToken(t, router)
 
 	// User1 creates a list
-	list1 := testutil.CreateTestList(t, router, token1, user1.ID)
+	list1 := testutil.CreateTestListViaAPI(t, router, token1, user1.ID)
 
 	// User2 tries to access User1's list
 	req, err := http.NewRequest("GET", "/api/v1/lists/"+list1.ID.String(), nil)
@@ -55,14 +55,14 @@ func TestModifyOtherUsersList(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user1, token1 := testutil.CreateTestUserWithToken(t, router)
-	_, token2 := testutil.CreateTestUserWithToken(t, router)
+	user1, token1 := CreateTestUserWithToken(t, router)
+	_, token2 := CreateTestUserWithToken(t, router)
 
 	// User1 creates a list
-	list1 := testutil.CreateTestList(t, router, token1, user1.ID)
+	list1 := testutil.CreateTestListViaAPI(t, router, token1, user1.ID)
 
 	// User2 tries to update User1's list
 	updateReq := models.UpdateTodoListRequest{
@@ -91,14 +91,14 @@ func TestDeleteOtherUsersList(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user1, token1 := testutil.CreateTestUserWithToken(t, router)
-	_, token2 := testutil.CreateTestUserWithToken(t, router)
+	user1, token1 := CreateTestUserWithToken(t, router)
+	_, token2 := CreateTestUserWithToken(t, router)
 
 	// User1 creates a list
-	list1 := testutil.CreateTestList(t, router, token1, user1.ID)
+	list1 := testutil.CreateTestListViaAPI(t, router, token1, user1.ID)
 
 	// User2 tries to delete User1's list
 	req, err := http.NewRequest("DELETE", "/api/v1/lists/"+list1.ID.String(), nil)
@@ -129,15 +129,15 @@ func TestAccessOtherUsersTodos(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user1, token1 := testutil.CreateTestUserWithToken(t, router)
-	_, token2 := testutil.CreateTestUserWithToken(t, router)
+	user1, token1 := CreateTestUserWithToken(t, router)
+	_, token2 := CreateTestUserWithToken(t, router)
 
 	// User1 creates a list and todo
-	list1 := testutil.CreateTestList(t, router, token1, user1.ID)
-	todo1 := testutil.CreateTestTodo(t, router, token1, list1.ID)
+	list1 := testutil.CreateTestListViaAPI(t, router, token1, user1.ID)
+	todo1 := testutil.CreateTestTodoViaAPI(t, router, token1, list1.ID)
 
 	// User2 tries to access User1's todo
 	req, err := http.NewRequest("GET", fmt.Sprintf("/api/v1/lists/%s/todos/%s", list1.ID, todo1.ID), nil)
@@ -158,14 +158,14 @@ func TestModifyOtherUsersTodo(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user1, token1 := testutil.CreateTestUserWithToken(t, router)
-	_, token2 := testutil.CreateTestUserWithToken(t, router)
+	user1, token1 := CreateTestUserWithToken(t, router)
+	_, token2 := CreateTestUserWithToken(t, router)
 
-	list1 := testutil.CreateTestList(t, router, token1, user1.ID)
-	todo1 := testutil.CreateTestTodo(t, router, token1, list1.ID)
+	list1 := testutil.CreateTestListViaAPI(t, router, token1, user1.ID)
+	todo1 := testutil.CreateTestTodoViaAPI(t, router, token1, list1.ID)
 
 	// User2 tries to update User1's todo
 	updateReq := models.UpdateTodoRequest{
@@ -194,14 +194,14 @@ func TestInsecureDirectObjectReference(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user1, token1 := testutil.CreateTestUserWithToken(t, router)
-	_, token2 := testutil.CreateTestUserWithToken(t, router)
+	user1, token1 := CreateTestUserWithToken(t, router)
+	_, token2 := CreateTestUserWithToken(t, router)
 
 	// Create resources for user1
-	list1 := testutil.CreateTestList(t, router, token1, user1.ID)
+	list1 := testutil.CreateTestListViaAPI(t, router, token1, user1.ID)
 
 	// Try various IDOR attacks
 	idorAttempts := []struct {
@@ -246,10 +246,10 @@ func TestMassAssignment(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	_, token := testutil.CreateTestUserWithToken(t, router)
+	_, token := CreateTestUserWithToken(t, router)
 
 	// Try to set fields that shouldn't be settable via mass assignment
 	maliciousReq := map[string]interface{}{
@@ -291,10 +291,10 @@ func TestPrivilegeEscalation(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	_, token := testutil.CreateTestUserWithToken(t, router)
+	_, token := CreateTestUserWithToken(t, router)
 
 	// Try to escalate privileges via profile update
 	escalationAttempts := []map[string]interface{}{

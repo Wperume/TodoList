@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"todolist-api/internal/models"
-	"todolist-api/internal/testutil"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
@@ -25,7 +24,7 @@ func TestMissingAuthToken(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
 	protectedEndpoints := []struct {
@@ -73,7 +72,7 @@ func TestInvalidAuthToken(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
 	invalidTokens := []struct {
@@ -112,10 +111,10 @@ func TestExpiredToken(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user, _ := testutil.CreateTestUserWithToken(t, router)
+	user, _ := CreateTestUserWithToken(t, router)
 
 	// Create an expired token manually
 	jwtSecret := []byte("test-secret-key-min-32-characters-long!")
@@ -155,10 +154,10 @@ func TestTokenReuse(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	_, accessToken := testutil.CreateTestUserWithToken(t, router)
+	_, accessToken := CreateTestUserWithToken(t, router)
 
 	// Verify token works
 	req, err := http.NewRequest("GET", "/api/v1/lists", nil)
@@ -180,10 +179,10 @@ func TestJWTAlgorithmSubstitution(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user, _ := testutil.CreateTestUserWithToken(t, router)
+	user, _ := CreateTestUserWithToken(t, router)
 
 	// Try to create token with "none" algorithm
 	claims := jwt.MapClaims{
@@ -213,10 +212,10 @@ func TestJWTSignatureVerification(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
-	user, validToken := testutil.CreateTestUserWithToken(t, router)
+	user, validToken := CreateTestUserWithToken(t, router)
 
 	// Verify the valid token works
 	req, err := http.NewRequest("GET", "/api/v1/lists", nil)
@@ -289,7 +288,7 @@ func TestPasswordComplexity(t *testing.T) {
 		t.Skip("Skipping security test in short mode")
 	}
 
-	router, cleanup := testutil.SetupTestRouter(t)
+	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
 
 	weakPasswords := []string{
