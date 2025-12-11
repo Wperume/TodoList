@@ -110,18 +110,20 @@ make scan-security TARGET=https://localhost:8443
 
 ### Scanner Options
 
+All flags support both single dash (`-flag`) and double dash (`--flag`) syntax.
+
 ```
 --target string          Target URL (required)
---safe-mode             Enable safe mode (read-only testing) (default: true)
-                        Set to false for full testing: --safe-mode=false
---max-rps int           Maximum requests per second (default: 5)
---timeout int           Request timeout in seconds (default: 10)
---skip-tls              Skip TLS certificate verification (for testing only)
---output string         Output file path (default: "security-report.html")
---format string         Output format: html or json (default: "html")
---verbose               Verbose output
---test-user string      Test user email (optional)
---test-password string  Test user password (optional)
+--safe-mode              Enable safe mode (read-only testing) (default: true)
+                         Set to false for full testing: --safe-mode=false
+--max-rps int            Maximum requests per second (default: 5)
+--timeout int            Request timeout in seconds (default: 10)
+--skip-tls               Skip TLS certificate verification (for testing only)
+--output string          Output file path (default: "security-report.html")
+--format string          Output format: html or json (default: "html")
+--verbose                Verbose output
+--test-user string       Test user email (optional)
+--test-password string   Test user password (optional)
 ```
 
 ### Safe Mode vs Full Testing
