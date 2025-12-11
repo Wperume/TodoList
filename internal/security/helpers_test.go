@@ -11,6 +11,7 @@ import (
 
 	"todolist-api/internal/auth"
 	"todolist-api/internal/handlers"
+	"todolist-api/internal/logging"
 	"todolist-api/internal/middleware"
 	"todolist-api/internal/models"
 	"todolist-api/internal/storage"
@@ -22,6 +23,11 @@ import (
 
 // SetupTestRouter creates a test router with all handlers initialized
 func SetupTestRouter(t *testing.T) (*gin.Engine, func()) {
+	// Initialize logger for tests (required by middleware)
+	logging.InitLogger(&logging.LogConfig{
+		Level: "error", // Suppress logs during tests
+	})
+
 	// Setup test database
 	db := testutil.SetupTestDB(t)
 
