@@ -17,9 +17,6 @@ import (
 
 // TestAccessOtherUsersLists tests that users cannot access other users' lists
 func TestAccessOtherUsersLists(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -46,14 +43,12 @@ func TestAccessOtherUsersLists(t *testing.T) {
 	var response map[string]interface{}
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	require.NoError(t, err)
-	assert.Contains(t, response, "error")
+	// API returns "code" and "message" fields for errors
+	assert.Contains(t, response, "code")
 }
 
 // TestModifyOtherUsersList tests that users cannot modify other users' lists
 func TestModifyOtherUsersList(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -87,9 +82,6 @@ func TestModifyOtherUsersList(t *testing.T) {
 
 // TestDeleteOtherUsersList tests that users cannot delete other users' lists
 func TestDeleteOtherUsersList(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -125,9 +117,6 @@ func TestDeleteOtherUsersList(t *testing.T) {
 
 // TestAccessOtherUsersTodos tests that users cannot access other users' todos
 func TestAccessOtherUsersTodos(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -154,9 +143,6 @@ func TestAccessOtherUsersTodos(t *testing.T) {
 
 // TestModifyOtherUsersTodo tests that users cannot modify other users' todos
 func TestModifyOtherUsersTodo(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -190,9 +176,6 @@ func TestModifyOtherUsersTodo(t *testing.T) {
 
 // TestInsecureDirectObjectReference tests IDOR vulnerabilities
 func TestInsecureDirectObjectReference(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -242,9 +225,6 @@ func TestInsecureDirectObjectReference(t *testing.T) {
 
 // TestMassAssignment tests mass assignment vulnerabilities
 func TestMassAssignment(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -287,9 +267,6 @@ func TestMassAssignment(t *testing.T) {
 
 // TestPrivilegeEscalation tests for privilege escalation vulnerabilities
 func TestPrivilegeEscalation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()

@@ -16,9 +16,6 @@ import (
 
 // TestSQLInjectionInLogin tests SQL injection attempts in login endpoint
 func TestSQLInjectionInLogin(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -78,9 +75,6 @@ func TestSQLInjectionInLogin(t *testing.T) {
 
 // TestSQLInjectionInTodoDescription tests SQL injection in todo descriptions
 func TestSQLInjectionInTodoDescription(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -137,9 +131,6 @@ func TestSQLInjectionInTodoDescription(t *testing.T) {
 
 // TestCommandInjectionInDescription tests command injection attempts
 func TestCommandInjectionInDescription(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -189,9 +180,6 @@ func TestCommandInjectionInDescription(t *testing.T) {
 
 // TestNoSQLInjectionInUUID tests that UUID validation prevents injection
 func TestNoSQLInjectionInUUID(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -222,8 +210,8 @@ func TestNoSQLInjectionInUUID(t *testing.T) {
 			err = json.Unmarshal(w.Body.Bytes(), &response)
 			require.NoError(t, err)
 
-			// Should return validation error
-			assert.Contains(t, response, "error")
+			// Should return validation error - API returns "code" field
+			assert.Contains(t, response, "code")
 		})
 	}
 }

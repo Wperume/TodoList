@@ -202,21 +202,53 @@ func PriorityPtr(p models.Priority) *models.Priority {
 
 // CreateTestListViaAPI creates a test list via API call
 func CreateTestListViaAPI(t *testing.T, router *gin.Engine, token string, userID uuid.UUID) *models.TodoList {
-	list := &models.TodoList{
-		ID:     uuid.New(),
-		UserID: userID,
-		Name:   "Test List",
+	createReq := models.CreateTodoListRequest{
+		Name:        "Test List",
+		Description: "Test Description",
 	}
-	return list
+
+	body, err := json.Marshal(createReq)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest("POST", "/api/v1/lists", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusCreated, w.Code, "Failed to create test list: %s", w.Body.String())
+
+	var list models.TodoList
+	err = json.Unmarshal(w.Body.Bytes(), &list)
+	require.NoError(t, err)
+
+	return &list
 }
 
 // CreateTestTodoViaAPI creates a test todo via API call
 func CreateTestTodoViaAPI(t *testing.T, router *gin.Engine, token string, listID uuid.UUID) *models.Todo {
-	todo := &models.Todo{
-		ID:          uuid.New(),
-		ListID:      listID,
+	createReq := models.CreateTodoRequest{
 		Description: "Test Todo",
 		Priority:    models.PriorityMedium,
+		Flagged:     false,
 	}
-	return todo
+
+	body, err := json.Marshal(createReq)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest("POST", "/api/v1/lists/"+listID.String()+"/todos", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusCreated, w.Code, "Failed to create test todo: %s", w.Body.String())
+
+	var todo models.Todo
+	err = json.Unmarshal(w.Body.Bytes(), &todo)
+	require.NoError(t, err)
+
+	return &todo
 }

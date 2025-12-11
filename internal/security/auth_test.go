@@ -20,9 +20,6 @@ import (
 
 // TestMissingAuthToken tests that endpoints reject requests without auth tokens
 func TestMissingAuthToken(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -61,16 +58,15 @@ func TestMissingAuthToken(t *testing.T) {
 			err = json.Unmarshal(w.Body.Bytes(), &response)
 			require.NoError(t, err)
 
-			assert.Contains(t, response, "error")
+			// API returns "code" and "message" fields for errors
+			assert.Contains(t, response, "code")
+			assert.Contains(t, response, "message")
 		})
 	}
 }
 
 // TestInvalidAuthToken tests that invalid tokens are rejected
 func TestInvalidAuthToken(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -107,9 +103,6 @@ func TestInvalidAuthToken(t *testing.T) {
 
 // TestExpiredToken tests that expired tokens are rejected
 func TestExpiredToken(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -150,9 +143,6 @@ func TestExpiredToken(t *testing.T) {
 
 // TestTokenReuse tests that logout invalidates tokens properly
 func TestTokenReuse(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -175,9 +165,6 @@ func TestTokenReuse(t *testing.T) {
 
 // TestJWTAlgorithmSubstitution tests algorithm substitution attacks
 func TestJWTAlgorithmSubstitution(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -208,9 +195,6 @@ func TestJWTAlgorithmSubstitution(t *testing.T) {
 
 // TestJWTSignatureVerification tests that signature is properly verified
 func TestJWTSignatureVerification(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -284,9 +268,6 @@ func TestJWTSignatureVerification(t *testing.T) {
 
 // TestPasswordComplexity tests that weak passwords are rejected
 func TestPasswordComplexity(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()

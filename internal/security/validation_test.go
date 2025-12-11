@@ -17,9 +17,6 @@ import (
 
 // TestXSSInInputs tests XSS payload handling
 func TestXSSInInputs(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -72,9 +69,6 @@ func TestXSSInInputs(t *testing.T) {
 
 // TestOversizedInputs tests handling of excessively large inputs
 func TestOversizedInputs(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -127,9 +121,6 @@ func TestOversizedInputs(t *testing.T) {
 
 // TestInvalidUUIDs tests UUID validation
 func TestInvalidUUIDs(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -162,16 +153,14 @@ func TestInvalidUUIDs(t *testing.T) {
 			var response map[string]interface{}
 			err = json.Unmarshal(w.Body.Bytes(), &response)
 			require.NoError(t, err)
-			assert.Contains(t, response, "error")
+			// API returns "code" field for errors
+			assert.Contains(t, response, "code")
 		})
 	}
 }
 
 // TestInvalidJSON tests handling of malformed JSON
 func TestInvalidJSON(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -206,16 +195,14 @@ func TestInvalidJSON(t *testing.T) {
 			var response map[string]interface{}
 			err = json.Unmarshal(w.Body.Bytes(), &response)
 			require.NoError(t, err)
-			assert.Contains(t, response, "error")
+			// API returns "code" field for errors
+			assert.Contains(t, response, "code")
 		})
 	}
 }
 
 // TestSpecialCharacters tests handling of special characters
 func TestSpecialCharacters(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -264,9 +251,6 @@ func TestSpecialCharacters(t *testing.T) {
 
 // TestContentTypeValidation tests content-type header validation
 func TestContentTypeValidation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
@@ -313,9 +297,6 @@ func TestContentTypeValidation(t *testing.T) {
 
 // TestEmailValidation tests email format validation
 func TestEmailValidation(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping security test in short mode")
-	}
 
 	router, cleanup := SetupTestRouter(t)
 	defer cleanup()
