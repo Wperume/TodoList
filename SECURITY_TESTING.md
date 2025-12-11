@@ -119,7 +119,9 @@ All flags support both single dash (`-flag`) and double dash (`--flag`) syntax.
 --max-rps int            Maximum requests per second (default: 5)
 --timeout int            Request timeout in seconds (default: 10)
 --skip-tls               Skip TLS certificate verification (for testing only)
---output string          Output file path (default: "security-report.html")
+--output string          Output file path (default: auto-detected from format)
+                         Defaults to "security-report.html" for HTML
+                         Defaults to "security-report.json" for JSON
 --format string          Output format: html or json (default: "html")
 --verbose                Verbose output
 --test-user string       Test user email (optional)
@@ -198,6 +200,14 @@ The scanner generates an HTML report with:
 - **60-79**: Good, but some improvements needed
 - **40-59**: Fair, multiple issues to address
 - **0-39**: Poor, critical issues present
+
+#### Exit Codes
+
+The scanner exits with different codes based on results:
+- **Exit 0**: All security tests passed
+- **Exit 1**: One or more security tests failed
+
+**Note**: The Makefile targets (`make scan-security`, `make scan-security-full`) suppress the exit code error to allow the scan to complete and generate the report. The scanner will still display the actual results and security score. Check [security-report.html](security-report.html) for the detailed findings.
 
 ### Example Workflow
 

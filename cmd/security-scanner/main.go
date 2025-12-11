@@ -18,7 +18,7 @@ func main() {
 	maxRPS := flag.Int("max-rps", 5, "Maximum requests per second")
 	timeout := flag.Int("timeout", 10, "Request timeout in seconds")
 	skipTLS := flag.Bool("skip-tls", false, "Skip TLS certificate verification (for testing only)")
-	output := flag.String("output", "security-report.html", "Output file path")
+	output := flag.String("output", "", "Output file path (default: security-report.html or security-report.json)")
 	format := flag.String("format", "html", "Output format (html, json)")
 	verbose := flag.Bool("verbose", false, "Verbose output")
 	testUser := flag.String("test-user", "", "Test user email (optional)")
@@ -35,6 +35,15 @@ func main() {
 		fmt.Fprintln(os.Stderr, "  security-scanner --target https://api.example.com")
 		fmt.Fprintln(os.Stderr, "  security-scanner --target https://localhost:8443 --skip-tls --output report.html")
 		os.Exit(1)
+	}
+
+	// Set default output filename based on format if not specified
+	if *output == "" {
+		if *format == "json" {
+			*output = "security-report.json"
+		} else {
+			*output = "security-report.html"
+		}
 	}
 
 	// Create scanner config

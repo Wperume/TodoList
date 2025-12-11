@@ -101,20 +101,38 @@ scan-security: build-scanner
 	@echo "Running security scan (safe mode)..."
 	@if [ -z "$(TARGET)" ]; then \
 		echo "Using default target: https://localhost:8443"; \
-		./bin/security-scanner --target https://localhost:8443 --skip-tls --verbose --output security-report.html; \
+		./bin/security-scanner --target https://localhost:8443 --skip-tls --verbose --output security-report.html || true; \
 	else \
-		./bin/security-scanner --target $(TARGET) --verbose --output security-report.html; \
+		if [ "$(SKIP_TLS)" = "true" ]; then \
+			echo "Scanning $(TARGET) (skipping TLS verification)..."; \
+			./bin/security-scanner --target $(TARGET) --skip-tls --verbose --output security-report.html || true; \
+		else \
+			echo "Scanning $(TARGET)..."; \
+			./bin/security-scanner --target $(TARGET) --verbose --output security-report.html || true; \
+		fi; \
 	fi
+	@echo ""
+	@echo "Note: Scanner may exit with error code if security tests fail."
+	@echo "Check security-report.html for detailed results."
 
 # Run security scanner with full testing (disable safe mode)
 scan-security-full: build-scanner
 	@echo "Running security scan (FULL TESTING - not safe for production)..."
 	@if [ -z "$(TARGET)" ]; then \
 		echo "Using default target: https://localhost:8443"; \
-		./bin/security-scanner --target https://localhost:8443 --skip-tls --safe-mode=false --verbose --output security-report.html; \
+		./bin/security-scanner --target https://localhost:8443 --skip-tls --safe-mode=false --verbose --output security-report.html || true; \
 	else \
-		./bin/security-scanner --target $(TARGET) --safe-mode=false --verbose --output security-report.html; \
+		if [ "$(SKIP_TLS)" = "true" ]; then \
+			echo "Scanning $(TARGET) (skipping TLS verification)..."; \
+			./bin/security-scanner --target $(TARGET) --skip-tls --safe-mode=false --verbose --output security-report.html || true; \
+		else \
+			echo "Scanning $(TARGET)..."; \
+			./bin/security-scanner --target $(TARGET) --safe-mode=false --verbose --output security-report.html || true; \
+		fi; \
 	fi
+	@echo ""
+	@echo "Note: Scanner may exit with error code if security tests fail."
+	@echo "Check security-report.html for detailed results."
 
 # Run all tests including security
 test-all: test-unit test-security
@@ -228,8 +246,8 @@ help:
 	@echo ""
 	@echo "Security:"
 	@echo "  build-scanner           - Build security scanner tool"
-	@echo "  scan-security           - Scan instance in safe mode (use TARGET=url)"
-	@echo "  scan-security-full      - Full security scan (unsafe for production)"
+	@echo "  scan-security           - Scan instance in safe mode (use TARGET=url SKIP_TLS=true)"
+	@echo "  scan-security-full      - Full security scan (use TARGET=url SKIP_TLS=true)"
 	@echo ""
 	@echo "Utilities:"
 	@echo "  clean         - Clean build artifacts"

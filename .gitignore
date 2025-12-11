@@ -67,4 +67,7 @@ go/
 
 # Binary directories
 bin/
+
+# Security scanner reports
 security-report.html
+security-report.json
