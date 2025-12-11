@@ -1,6 +1,7 @@
 package scanner
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -103,7 +104,8 @@ func (s *Scanner) addTest(category *Category, test *TestCase) {
 // makeRequest makes an HTTP request with rate limiting
 func (s *Scanner) makeRequest(method, path string, headers map[string]string) (*http.Response, error) {
 	// Wait for rate limiter
-	if err := s.limiter.Wait(nil); err != nil {
+	ctx := context.Background()
+	if err := s.limiter.Wait(ctx); err != nil {
 		return nil, err
 	}
 
